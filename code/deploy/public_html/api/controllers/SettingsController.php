@@ -7,6 +7,54 @@
 require_once __DIR__ . '/../config/database.php';
 
 class SettingsController {
+    private function ensureCoachSocialLinksTable() {
+        modify("
+            CREATE TABLE IF NOT EXISTS coach_social_links (
+                id INT PRIMARY KEY AUTO_INCREMENT,
+                platform VARCHAR(50) NOT NULL,
+                label VARCHAR(100) NOT NULL,
+                url VARCHAR(500) NOT NULL,
+                sort_order INT DEFAULT 0,
+                is_enabled TINYINT(1) DEFAULT 1,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+            )
+        ");
+
+        $count = fetchOne("SELECT COUNT(*) AS total FROM coach_social_links");
+        if ((int) ($count['total'] ?? 0) > 0) {
+            return;
+        }
+
+        $defaults = [
+            ['telegram', 'Telegram', 'https://t.me/hunter_tradeing', 1, 1],
+            ['instagram', 'Instagram', 'https://instagram.com/hunter_tradeing', 2, 1],
+            ['youtube', 'YouTube', 'https://youtube.com/@hunter_tradeing', 3, 1],
+            ['facebook', 'Facebook', 'https://facebook.com/hunter_tradeing', 4, 0],
+            ['twitter', 'X / Twitter', 'https://x.com/hunter_tradeing', 5, 0],
+            ['whatsapp', 'WhatsApp', 'https://wa.me/201000000000', 6, 0]
+        ];
+
+        foreach ($defaults as [$platform, $label, $url, $sortOrder, $isEnabled]) {
+            insert(
+                "INSERT INTO coach_social_links (platform, label, url, sort_order, is_enabled) VALUES (?, ?, ?, ?, ?)",
+                [$platform, $label, $url, $sortOrder, $isEnabled]
+            );
+        }
+    }
+
+    private function getCoachSocialLinksRows(bool $onlyEnabled = false) {
+        $this->ensureCoachSocialLinksTable();
+
+        $sql = "SELECT id, platform, label, url, sort_order, is_enabled FROM coach_social_links";
+        if ($onlyEnabled) {
+            $sql .= " WHERE is_enabled = 1";
+        }
+
+        $sql .= " ORDER BY sort_order ASC, id ASC";
+        return fetchAll($sql);
+    }
+
     private function deleteManagedFile(?string $relativePath) {
         if (!$relativePath || !str_starts_with($relativePath, '/uploads/')) {
             return;
@@ -20,14 +68,35 @@ class SettingsController {
         modify("DELETE FROM media WHERE filepath = ?", [$relativePath]);
     }
 
-    private function storeUploadedFile(array $file, string $directory, string $prefix = 'media_') {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        if (!in_array($file['type'], $allowedTypes, true)) {
-            throw new Exception('Invalid file type. Allowed: JPEG, PNG, WebP, GIF');
+    private function storeUploadedFile(array $file, string $directory, string $prefix = 'media_', bool $allowVideos = false) {
+        $allowedTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+        ];
+
+        if ($allowVideos) {
+            $allowedTypes += [
+                'video/mp4' => 'mp4',
+                'video/webm' => 'webm',
+                'video/quicktime' => 'mov',
+            ];
         }
 
-        if ($file['size'] > 10 * 1024 * 1024) {
-            throw new Exception('File too large. Maximum size: 10MB');
+        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new Exception('Upload failed');
+        }
+
+        $maxSize = $allowVideos ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (($file['size'] ?? 0) > $maxSize) {
+            throw new Exception('File too large. Maximum size: ' . ($allowVideos ? '100MB' : '10MB'));
+        }
+
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        if (!isset($allowedTypes[$mimeType])) {
+            throw new Exception($allowVideos ? 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF, MP4, WebM, MOV' : 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF');
         }
 
         $uploadDir = __DIR__ . '/../../uploads/' . trim($directory, '/') . '/';
@@ -35,7 +104,7 @@ class SettingsController {
             mkdir($uploadDir, 0755, true);
         }
 
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $extension = $allowedTypes[$mimeType];
         $filename = $prefix . time() . '_' . uniqid() . '.' . $extension;
         $filepath = $uploadDir . $filename;
 
@@ -46,7 +115,7 @@ class SettingsController {
         $relativePath = '/uploads/' . trim($directory, '/') . '/' . $filename;
         insert(
             "INSERT INTO media (filename, filepath, mimetype, size_bytes) VALUES (?, ?, ?, ?)",
-            [$file['name'], $relativePath, $file['type'], $file['size']]
+            [$file['name'], $relativePath, $mimeType, $file['size']]
         );
 
         return $relativePath;
@@ -190,6 +259,7 @@ class SettingsController {
     public function getCoachProfile() {
         try {
             $profile = fetchOne("SELECT * FROM coach_profile LIMIT 1");
+            $socialLinks = $this->getCoachSocialLinksRows(true);
             
             if (!$profile) {
                 // Return default if no profile exists
@@ -205,10 +275,13 @@ class SettingsController {
                         'image_url' => null,
                         'experience_years' => 8,
                         'students_count' => 10000,
-                        'profit_shared' => '$2M+'
+                        'profit_shared' => '$2M+',
+                        'social_links' => $socialLinks
                     ]
                 ]);
             }
+
+            $profile['social_links'] = $socialLinks;
             
             return json_encode([
                 'success' => true,
@@ -229,6 +302,13 @@ class SettingsController {
     public function updateCoachProfile($data) {
         try {
             $currentProfile = fetchOne("SELECT * FROM coach_profile LIMIT 1");
+            if (!$currentProfile) {
+                insert(
+                    "INSERT INTO coach_profile (name_en, name_ar, title_en, title_ar, bio_en, bio_ar, experience_years, students_count, profit_shared)
+                     VALUES ('', '', '', '', '', '', 0, 0, '')"
+                );
+                $currentProfile = fetchOne("SELECT * FROM coach_profile LIMIT 1");
+            }
             $fields = [];
             $values = [];
             
@@ -256,7 +336,8 @@ class SettingsController {
             
             $values[] = date('Y-m-d H:i:s'); // updated_at
             
-            $sql = "UPDATE coach_profile SET " . implode(', ', $fields) . ", updated_at = ? LIMIT 1";
+            $values[] = (int) $currentProfile['id'];
+            $sql = "UPDATE coach_profile SET " . implode(', ', $fields) . ", updated_at = ? WHERE id = ?";
             modify($sql, $values);
             
             return json_encode([
@@ -286,15 +367,22 @@ class SettingsController {
             }
             
             $file = $_FILES['image'];
-            $currentProfile = fetchOne("SELECT image_url FROM coach_profile LIMIT 1");
+            $currentProfile = fetchOne("SELECT id, image_url FROM coach_profile LIMIT 1");
+            if (!$currentProfile) {
+                insert(
+                    "INSERT INTO coach_profile (name_en, name_ar, title_en, title_ar, bio_en, bio_ar, experience_years, students_count, profit_shared)
+                     VALUES ('', '', '', '', '', '', 0, 0, '')"
+                );
+                $currentProfile = fetchOne("SELECT id, image_url FROM coach_profile LIMIT 1");
+            }
             $relativePath = $this->storeUploadedFile($file, 'coach', 'coach_');
             if (!empty($currentProfile['image_url']) && $currentProfile['image_url'] !== $relativePath) {
                 $this->deleteManagedFile($currentProfile['image_url']);
             }
 
             modify(
-                "UPDATE coach_profile SET image_url = ? WHERE id = 1",
-                [$relativePath]
+                "UPDATE coach_profile SET image_url = ? WHERE id = ?",
+                [$relativePath, (int) ($currentProfile['id'] ?? 1)]
             );
 
             return json_encode([
@@ -325,8 +413,8 @@ class SettingsController {
             }
             
             $file = $_FILES['file'];
-            $relativePath = $this->storeUploadedFile($file, 'media', 'media_');
-            $media = fetchOne("SELECT id, filename, filepath FROM media WHERE filepath = ?", [$relativePath]);
+            $relativePath = $this->storeUploadedFile($file, 'media', 'media_', true);
+            $media = fetchOne("SELECT id, filename, filepath, mimetype FROM media WHERE filepath = ?", [$relativePath]);
 
             return json_encode([
                 'success' => true,
@@ -335,6 +423,7 @@ class SettingsController {
                     'id' => $media['id'] ?? null,
                     'filename' => $media['filename'] ?? $file['name'],
                     'filepath' => $relativePath,
+                    'mimetype' => $media['mimetype'] ?? null,
                     'url' => $relativePath
                 ]
             ]);
@@ -400,6 +489,173 @@ class SettingsController {
             return json_encode([
                 'success' => false,
                 'error' => 'Failed to delete media'
+            ]);
+        }
+    }
+
+    public function getCoachSocialLinks(bool $onlyEnabled = false) {
+        try {
+            return json_encode([
+                'success' => true,
+                'data' => $this->getCoachSocialLinksRows($onlyEnabled)
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode([
+                'success' => false,
+                'error' => 'Failed to fetch coach social links'
+            ]);
+        }
+    }
+
+    public function createCoachSocialLink($data) {
+        try {
+            $this->ensureCoachSocialLinksTable();
+
+            $platform = trim((string) ($data['platform'] ?? 'custom'));
+            $label = trim((string) ($data['label'] ?? ''));
+            $url = trim((string) ($data['url'] ?? ''));
+            $sortOrder = (int) ($data['sort_order'] ?? 0);
+            $isEnabled = !empty($data['is_enabled']) ? 1 : 0;
+
+            if ($label === '' || $url === '') {
+                http_response_code(400);
+                return json_encode([
+                    'success' => false,
+                    'error' => 'Label and URL are required'
+                ]);
+            }
+
+            $id = insert(
+                "INSERT INTO coach_social_links (platform, label, url, sort_order, is_enabled) VALUES (?, ?, ?, ?, ?)",
+                [$platform, $label, $url, $sortOrder, $isEnabled]
+            );
+
+            $link = fetchOne(
+                "SELECT id, platform, label, url, sort_order, is_enabled FROM coach_social_links WHERE id = ?",
+                [$id]
+            );
+
+            return json_encode([
+                'success' => true,
+                'message' => 'Coach social link created successfully',
+                'data' => $link
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode([
+                'success' => false,
+                'error' => 'Failed to create coach social link'
+            ]);
+        }
+    }
+
+    public function updateCoachSocialLink($data) {
+        try {
+            $this->ensureCoachSocialLinksTable();
+
+            $id = (int) ($data['id'] ?? 0);
+            if ($id <= 0) {
+                http_response_code(400);
+                return json_encode([
+                    'success' => false,
+                    'error' => 'Valid link ID is required'
+                ]);
+            }
+
+            $existing = fetchOne("SELECT id FROM coach_social_links WHERE id = ?", [$id]);
+            if (!$existing) {
+                http_response_code(404);
+                return json_encode([
+                    'success' => false,
+                    'error' => 'Coach social link not found'
+                ]);
+            }
+
+            $fields = [];
+            $values = [];
+
+            foreach (['platform', 'label', 'url', 'sort_order', 'is_enabled'] as $field) {
+                if (!array_key_exists($field, $data)) {
+                    continue;
+                }
+
+                $value = $data[$field];
+                if ($field === 'sort_order') {
+                    $value = (int) $value;
+                } elseif ($field === 'is_enabled') {
+                    $value = !empty($value) ? 1 : 0;
+                } else {
+                    $value = trim((string) $value);
+                }
+
+                $fields[] = "{$field} = ?";
+                $values[] = $value;
+            }
+
+            if (empty($fields)) {
+                http_response_code(400);
+                return json_encode([
+                    'success' => false,
+                    'error' => 'No valid fields to update'
+                ]);
+            }
+
+            $values[] = $id;
+            modify("UPDATE coach_social_links SET " . implode(', ', $fields) . " WHERE id = ?", $values);
+
+            $link = fetchOne(
+                "SELECT id, platform, label, url, sort_order, is_enabled FROM coach_social_links WHERE id = ?",
+                [$id]
+            );
+
+            return json_encode([
+                'success' => true,
+                'message' => 'Coach social link updated successfully',
+                'data' => $link
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode([
+                'success' => false,
+                'error' => 'Failed to update coach social link'
+            ]);
+        }
+    }
+
+    public function deleteCoachSocialLink($id) {
+        try {
+            $this->ensureCoachSocialLinksTable();
+            $id = (int) $id;
+
+            if ($id <= 0) {
+                http_response_code(400);
+                return json_encode([
+                    'success' => false,
+                    'error' => 'Valid link ID is required'
+                ]);
+            }
+
+            $existing = fetchOne("SELECT id FROM coach_social_links WHERE id = ?", [$id]);
+            if (!$existing) {
+                http_response_code(404);
+                return json_encode([
+                    'success' => false,
+                    'error' => 'Coach social link not found'
+                ]);
+            }
+
+            modify("DELETE FROM coach_social_links WHERE id = ?", [$id]);
+
+            return json_encode([
+                'success' => true,
+                'message' => 'Coach social link deleted successfully'
+            ]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            return json_encode([
+                'success' => false,
+                'error' => 'Failed to delete coach social link'
             ]);
         }
     }

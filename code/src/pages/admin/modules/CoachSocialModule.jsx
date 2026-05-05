@@ -30,7 +30,7 @@ export default function CoachSocialModule({
           <Field label="سنوات الخبرة" type="number" value={coach.experience_years || 0} onChange={(e) => setCoach((current) => ({ ...current, experience_years: Number(e.target.value) }))} />
           <Field label="عدد الطلاب" type="number" value={coach.students_count || 0} onChange={(e) => setCoach((current) => ({ ...current, students_count: Number(e.target.value) }))} />
           <Field label="الأرباح المعلنة" value={coach.profit_shared || ''} onChange={(e) => setCoach((current) => ({ ...current, profit_shared: e.target.value }))} />
-          <FilePicker label="صورة المدرب" preview={coach.image_url || ''} onChange={setCoachImageFile} />
+          <FilePicker label="صورة المدرب" preview={coach.image_url || ''} onChange={setCoachImageFile} accept="image/*" />
           <TextArea label="نبذة EN" className="md:col-span-2" value={coach.bio_en || ''} onChange={(e) => setCoach((current) => ({ ...current, bio_en: e.target.value }))} />
           <TextArea label="نبذة AR" className="md:col-span-2" value={coach.bio_ar || ''} onChange={(e) => setCoach((current) => ({ ...current, bio_ar: e.target.value }))} />
         </div>

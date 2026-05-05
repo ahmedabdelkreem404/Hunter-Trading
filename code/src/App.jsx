@@ -20,7 +20,7 @@ import { sectionSettingsAPI, settingsAPI } from './api'
 import useApiData from './hooks/useApiData'
 import { buildHomepageSectionsFromSettings, getVisibleHomepageSections, parseHomepageLayout } from './utils/sectionLayout'
 
-const LIVE_REFRESH_INTERVAL = 10000
+const LIVE_REFRESH_INTERVAL = 0
 
 const sectionComponents = {
   hero: Hero,

@@ -2,32 +2,30 @@ import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
 import { X, Download, CheckCircle, Loader2 } from 'lucide-react'
-import axios from 'axios'
+import { leadsAPI, settingsAPI } from '../../api'
+import useApiData from '../../hooks/useApiData'
 
 export default function LeadMagnet({ onClose }) {
   const { t } = useTranslation()
   const [formData, setFormData] = useState({ name: '', email: '' })
   const [status, setStatus] = useState('idle') // idle, loading, success, error
   const isArabic = document.documentElement.dir === 'rtl'
+  const { data: settings } = useApiData(settingsAPI.getPublic, {}, (response) => response.data ?? {})
+  const telegramUrl = settings.general?.telegram_url?.value || settings.general?.free_telegram_url?.value || 'https://t.me/hunter_tradeing'
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     setStatus('loading')
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1500))
-      
-      // In production, this would be:
-      // await axios.post('/api/leads', formData)
-      
+      await leadsAPI.create({ ...formData, source: 'lead_magnet' })
       setStatus('success')
       
       // Close after showing success
       setTimeout(() => {
         onClose()
         // Open Telegram after closing
-        window.open('https://t.me/hunter_tradeing', '_blank')
+        window.open(telegramUrl, '_blank')
       }, 2000)
     } catch (error) {
       setStatus('error')

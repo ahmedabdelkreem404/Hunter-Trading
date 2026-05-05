@@ -6,7 +6,7 @@ import { coachAPI, sectionSettingsAPI } from '../../api'
 import { useTheme } from '../../contexts/ThemeContext'
 import useApiData from '../../hooks/useApiData'
 
-const LIVE_REFRESH_INTERVAL = 15000
+const LIVE_REFRESH_INTERVAL = 0
 
 const fallbackProfile = {
   name_en: 'Ahmed Hunter',

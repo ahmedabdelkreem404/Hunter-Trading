@@ -43,7 +43,7 @@ export default function TestimonialsModule({
           <Field label="Video URL" value={draft.video_url} onChange={(event) => setDraft((current) => ({ ...current, video_url: event.target.value }))} />
           <Field label="Rating" type="number" min="1" max="5" value={draft.rating} onChange={(event) => setDraft((current) => ({ ...current, rating: Number(event.target.value) }))} />
           <Field label="Sort order" type="number" value={draft.order_index || 0} onChange={(event) => setDraft((current) => ({ ...current, order_index: Number(event.target.value) }))} />
-          <FilePicker label="Avatar upload" preview={draft.image_url} onChange={setDraftImageFile} buttonLabel={draftImageFile?.name || 'Upload image'} />
+          <FilePicker label="Avatar upload" preview={draft.image_url} onChange={setDraftImageFile} buttonLabel={draftImageFile?.name || 'Upload image'} accept="image/*" />
           <MediaPicker label="Select avatar from library" media={media} selectedUrl={draft.image_url} onSelect={(item) => setDraft((current) => ({ ...current, image_url: item.filepath }))} />
           <TextArea label="Content EN" className="md:col-span-2 xl:col-span-3" value={draft.content_en} onChange={(event) => setDraft((current) => ({ ...current, content_en: event.target.value }))} />
           <TextArea label="Content AR" className="md:col-span-2 xl:col-span-3" value={draft.content_ar} onChange={(event) => setDraft((current) => ({ ...current, content_ar: event.target.value }))} />
@@ -80,7 +80,7 @@ export default function TestimonialsModule({
                 <Field label="Video URL" value={testimonial.video_url || ''} onChange={(event) => setTestimonials((current) => current.map((item) => (item.id === testimonial.id ? { ...item, video_url: event.target.value } : item)))} />
                 <Field label="Rating" type="number" min="1" max="5" value={testimonial.rating || 5} onChange={(event) => setTestimonials((current) => current.map((item) => (item.id === testimonial.id ? { ...item, rating: Number(event.target.value) } : item)))} />
                 <Field label="Sort order" type="number" value={testimonial.order_index || 0} onChange={(event) => setTestimonials((current) => current.map((item) => (item.id === testimonial.id ? { ...item, order_index: Number(event.target.value) } : item)))} />
-                <FilePicker label="Avatar upload" preview={testimonial.image_url || ''} onChange={(file) => onUploadImage(testimonial, file)} buttonLabel="Upload image" />
+                <FilePicker label="Avatar upload" preview={testimonial.image_url || ''} onChange={(file) => onUploadImage(testimonial, file)} buttonLabel="Upload image" accept="image/*" />
                 <MediaPicker label="Select avatar from library" media={media} selectedUrl={testimonial.image_url || ''} onSelect={(item) => setTestimonials((current) => current.map((entry) => (entry.id === testimonial.id ? { ...entry, image_url: item.filepath } : entry)))} />
                 <TextArea label="Content EN" className="md:col-span-2 xl:col-span-3" value={testimonial.content_en || ''} onChange={(event) => setTestimonials((current) => current.map((item) => (item.id === testimonial.id ? { ...item, content_en: event.target.value } : item)))} />
                 <TextArea label="Content AR" className="md:col-span-2 xl:col-span-3" value={testimonial.content_ar || ''} onChange={(event) => setTestimonials((current) => current.map((item) => (item.id === testimonial.id ? { ...item, content_ar: event.target.value } : item)))} />

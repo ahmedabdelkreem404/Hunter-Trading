@@ -1,5 +1,5 @@
 import { Plus, Trash2 } from 'lucide-react'
-import { ActionButton, Field, SectionCard, TextArea, Toggle } from './shared/AdminUI'
+import { ActionButton, Field, MediaPicker, SectionCard, TextArea, Toggle } from './shared/AdminUI'
 
 function statsToText(stats = []) {
   return (stats || []).map((item) => `${item.value || ''}|${item.label_en || ''}|${item.label_ar || ''}`).join('\n')
@@ -71,9 +71,14 @@ function MenuManager({ title, items, onChange }) {
   )
 }
 
-export default function WebsiteContentModule({ sections, setSections, onSave, saving }) {
+export default function WebsiteContentModule({ sections, setSections, onSave, saving, media = [] }) {
   const updateSection = (sectionKey, changes) => {
     setSections((current) => current.map((section) => (section.section_key === sectionKey ? { ...section, ...changes } : section)))
+  }
+
+  const updateSectionSettings = (sectionKey, changes) => {
+    const section = sections.find((item) => item.section_key === sectionKey)
+    updateSection(sectionKey, { settings: { ...(section?.settings || {}), ...changes } })
   }
 
   const hero = sections.find((section) => section.section_key === 'hero')
@@ -106,6 +111,44 @@ export default function WebsiteContentModule({ sections, setSections, onSave, sa
             <Field label="Secondary CTA AR" value={hero.secondary_cta_label_ar || ''} onChange={(event) => updateSection('hero', { secondary_cta_label_ar: event.target.value })} />
             <Field label="Secondary CTA URL" value={hero.secondary_cta_url || ''} onChange={(event) => updateSection('hero', { secondary_cta_url: event.target.value })} />
             <TextArea label="Stats lines: value|label_en|label_ar" className="md:col-span-2" value={statsToText(hero.stats)} onChange={(event) => updateSection('hero', { stats: textToStats(event.target.value) })} />
+          </div>
+
+          <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+            <h3 className="mb-4 text-sm font-semibold text-white">Hero video</h3>
+            <div className="grid gap-4 md:grid-cols-2">
+              <Field label="Hero video URL" value={hero.settings?.hero_video_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_video_url: event.target.value })} />
+              <Field label="Mobile video URL" value={hero.settings?.hero_mobile_video_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_mobile_video_url: event.target.value })} />
+              <MediaPicker
+                label="Select hero video from media"
+                media={media}
+                selectedUrl={hero.settings?.hero_video_url || ''}
+                onSelect={(item) => updateSectionSettings('hero', { hero_video_url: item.filepath })}
+              />
+              <MediaPicker
+                label="Select mobile video from media"
+                media={media}
+                selectedUrl={hero.settings?.hero_mobile_video_url || ''}
+                onSelect={(item) => updateSectionSettings('hero', { hero_mobile_video_url: item.filepath })}
+              />
+              <Field label="Poster image URL" value={hero.settings?.hero_video_poster_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_video_poster_url: event.target.value })} />
+              <Field label="Fallback image URL" value={hero.settings?.hero_fallback_image_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_fallback_image_url: event.target.value })} />
+              <MediaPicker
+                label="Select poster from media"
+                media={media}
+                selectedUrl={hero.settings?.hero_video_poster_url || ''}
+                onSelect={(item) => updateSectionSettings('hero', { hero_video_poster_url: item.filepath })}
+              />
+              <MediaPicker
+                label="Select fallback image from media"
+                media={media}
+                selectedUrl={hero.settings?.hero_fallback_image_url || ''}
+                onSelect={(item) => updateSectionSettings('hero', { hero_fallback_image_url: item.filepath })}
+              />
+              <Toggle label="Autoplay" checked={hero.settings?.hero_video_autoplay !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_autoplay: value })} />
+              <Toggle label="Muted" checked={hero.settings?.hero_video_muted !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_muted: value })} />
+              <Toggle label="Loop" checked={hero.settings?.hero_video_loop !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_loop: value })} />
+              <Toggle label="Show controls" checked={!!hero.settings?.hero_video_controls} onChange={(value) => updateSectionSettings('hero', { hero_video_controls: value })} />
+            </div>
           </div>
         </SectionCard>
       ) : null}

@@ -6,7 +6,7 @@ import { settingsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 import { useTheme } from '../../contexts/ThemeContext'
 
-const LIVE_REFRESH_INTERVAL = 10000
+const LIVE_REFRESH_INTERVAL = 0
 
 const TelegramIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">

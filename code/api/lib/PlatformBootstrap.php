@@ -18,7 +18,6 @@ class PlatformBootstrap
         self::ensureTestimonialsSchema();
         self::ensurePaymentOrdersSchema();
         self::normalizeExistingSectionSettings();
-        self::removeLegacyArtifacts();
 
         self::$bootstrapped = true;
     }
@@ -48,8 +47,31 @@ class PlatformBootstrap
                 badge_text_ar VARCHAR(100) NULL,
                 thumbnail_url VARCHAR(500) NULL,
                 cover_url VARCHAR(500) NULL,
+                cover_media_type ENUM('image','video','embed') DEFAULT 'image',
+                cover_video_poster_url VARCHAR(500) NULL,
+                card_media_type ENUM('image','video','embed') DEFAULT 'image',
+                card_media_url VARCHAR(500) NULL,
+                card_video_poster_url VARCHAR(500) NULL,
+                card_video_autoplay TINYINT(1) DEFAULT 0,
+                card_video_muted TINYINT(1) DEFAULT 1,
+                card_video_loop TINYINT(1) DEFAULT 1,
                 offer_starts_at DATETIME NULL,
                 offer_ends_at DATETIME NULL,
+                cta_action ENUM('checkout','details','external','referral','whatsapp','telegram') DEFAULT 'checkout',
+                referral_url VARCHAR(500) NULL,
+                broker_name VARCHAR(150) NULL,
+                broker_url VARCHAR(500) NULL,
+                terms_title_en VARCHAR(255) NULL,
+                terms_title_ar VARCHAR(255) NULL,
+                terms_content_en LONGTEXT NULL,
+                terms_content_ar LONGTEXT NULL,
+                risk_warning_en TEXT NULL,
+                risk_warning_ar TEXT NULL,
+                important_links_json LONGTEXT NULL,
+                details_button_label_en VARCHAR(100) NULL,
+                details_button_label_ar VARCHAR(100) NULL,
+                final_cta_label_en VARCHAR(100) NULL,
+                final_cta_label_ar VARCHAR(100) NULL,
                 is_featured TINYINT(1) DEFAULT 0,
                 is_visible TINYINT(1) DEFAULT 1,
                 sort_order INT DEFAULT 0,
@@ -61,6 +83,8 @@ class PlatformBootstrap
                 INDEX idx_services_offer_ends (offer_ends_at)
             )
         ");
+
+        self::ensureServiceColumns();
 
         modify("
             CREATE TABLE IF NOT EXISTS service_features (
@@ -120,6 +144,39 @@ class PlatformBootstrap
         self::seedDefaultServices();
     }
 
+    private static function ensureServiceColumns(): void
+    {
+        $columns = [
+            'cover_media_type' => "ENUM('image','video','embed') DEFAULT 'image' AFTER cover_url",
+            'cover_video_poster_url' => "VARCHAR(500) NULL AFTER cover_media_type",
+            'card_media_type' => "ENUM('image','video','embed') DEFAULT 'image' AFTER cover_video_poster_url",
+            'card_media_url' => "VARCHAR(500) NULL AFTER card_media_type",
+            'card_video_poster_url' => "VARCHAR(500) NULL AFTER card_media_url",
+            'card_video_autoplay' => "TINYINT(1) DEFAULT 0 AFTER card_video_poster_url",
+            'card_video_muted' => "TINYINT(1) DEFAULT 1 AFTER card_video_autoplay",
+            'card_video_loop' => "TINYINT(1) DEFAULT 1 AFTER card_video_muted",
+            'cta_action' => "ENUM('checkout','details','external','referral','whatsapp','telegram') DEFAULT 'checkout' AFTER offer_ends_at",
+            'referral_url' => "VARCHAR(500) NULL AFTER cta_action",
+            'broker_name' => "VARCHAR(150) NULL AFTER referral_url",
+            'broker_url' => "VARCHAR(500) NULL AFTER broker_name",
+            'terms_title_en' => "VARCHAR(255) NULL AFTER broker_url",
+            'terms_title_ar' => "VARCHAR(255) NULL AFTER terms_title_en",
+            'terms_content_en' => "LONGTEXT NULL AFTER terms_title_ar",
+            'terms_content_ar' => "LONGTEXT NULL AFTER terms_content_en",
+            'risk_warning_en' => "TEXT NULL AFTER terms_content_ar",
+            'risk_warning_ar' => "TEXT NULL AFTER risk_warning_en",
+            'important_links_json' => "LONGTEXT NULL AFTER risk_warning_ar",
+            'details_button_label_en' => "VARCHAR(100) NULL AFTER important_links_json",
+            'details_button_label_ar' => "VARCHAR(100) NULL AFTER details_button_label_en",
+            'final_cta_label_en' => "VARCHAR(100) NULL AFTER details_button_label_ar",
+            'final_cta_label_ar' => "VARCHAR(100) NULL AFTER final_cta_label_en",
+        ];
+
+        foreach ($columns as $column => $definition) {
+            self::ensureColumn('services', $column, $definition);
+        }
+    }
+
     private static function ensureSectionSettingsSchema(): void
     {
         modify("
@@ -167,6 +224,16 @@ class PlatformBootstrap
                     ['value' => '10000+', 'label_en' => 'Students', 'label_ar' => 'طالب'],
                     ['value' => '8+', 'label_en' => 'Years', 'label_ar' => 'سنوات خبرة'],
                     ['value' => '87%', 'label_en' => 'Win Rate', 'label_ar' => 'معدل نجاح'],
+                ], JSON_UNESCAPED_UNICODE),
+                'settings_json' => json_encode([
+                    'hero_video_url' => '',
+                    'hero_mobile_video_url' => '',
+                    'hero_video_poster_url' => '',
+                    'hero_fallback_image_url' => '',
+                    'hero_video_autoplay' => true,
+                    'hero_video_muted' => true,
+                    'hero_video_loop' => true,
+                    'hero_video_controls' => false,
                 ], JSON_UNESCAPED_UNICODE),
                 'sort_order' => 1,
             ],
@@ -390,29 +457,9 @@ class PlatformBootstrap
             return;
         }
 
-        self::ensureColumn('payment_orders', 'service_id', "INT NULL AFTER product_id");
+        self::ensureColumn('payment_orders', 'service_id', "INT NULL");
         self::ensureColumn('payment_orders', 'verified_at', "DATETIME NULL AFTER admin_note");
         self::ensureColumn('payment_orders', 'verified_by', "VARCHAR(150) NULL AFTER verified_at");
-    }
-
-    private static function removeLegacyArtifacts(): void
-    {
-        $legacyTables = [
-            'course_enrollments',
-            'lessons',
-            'courses',
-            'digital_products',
-            'blog_posts',
-            'signals',
-            'home_content',
-        ];
-
-        foreach ($legacyTables as $table) {
-            if (!self::tableExists($table)) {
-                continue;
-            }
-            modify("DROP TABLE IF EXISTS {$table}");
-        }
     }
 
     private static function normalizeExistingSectionSettings(): void

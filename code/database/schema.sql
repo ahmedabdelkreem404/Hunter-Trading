@@ -99,8 +99,31 @@ CREATE TABLE IF NOT EXISTS services (
     badge_text_ar VARCHAR(100) NULL,
     thumbnail_url VARCHAR(500) NULL,
     cover_url VARCHAR(500) NULL,
+    cover_media_type ENUM('image','video','embed') DEFAULT 'image',
+    cover_video_poster_url VARCHAR(500) NULL,
+    card_media_type ENUM('image','video','embed') DEFAULT 'image',
+    card_media_url VARCHAR(500) NULL,
+    card_video_poster_url VARCHAR(500) NULL,
+    card_video_autoplay TINYINT(1) DEFAULT 0,
+    card_video_muted TINYINT(1) DEFAULT 1,
+    card_video_loop TINYINT(1) DEFAULT 1,
     offer_starts_at DATETIME NULL,
     offer_ends_at DATETIME NULL,
+    cta_action ENUM('checkout','details','external','referral','whatsapp','telegram') DEFAULT 'checkout',
+    referral_url VARCHAR(500) NULL,
+    broker_name VARCHAR(150) NULL,
+    broker_url VARCHAR(500) NULL,
+    terms_title_en VARCHAR(255) NULL,
+    terms_title_ar VARCHAR(255) NULL,
+    terms_content_en LONGTEXT NULL,
+    terms_content_ar LONGTEXT NULL,
+    risk_warning_en TEXT NULL,
+    risk_warning_ar TEXT NULL,
+    important_links_json LONGTEXT NULL,
+    details_button_label_en VARCHAR(100) NULL,
+    details_button_label_ar VARCHAR(100) NULL,
+    final_cta_label_en VARCHAR(100) NULL,
+    final_cta_label_ar VARCHAR(100) NULL,
     is_featured TINYINT(1) DEFAULT 0,
     is_visible TINYINT(1) DEFAULT 1,
     sort_order INT DEFAULT 0,
@@ -217,15 +240,18 @@ CREATE TABLE IF NOT EXISTS leads (
     phone VARCHAR(50) NULL,
     source VARCHAR(100) NULL,
     message TEXT NULL,
+    telegram_joined TINYINT(1) DEFAULT 0,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS analytics (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    event_name VARCHAR(100) NOT NULL,
+    event_type VARCHAR(100) NOT NULL,
     event_data LONGTEXT NULL,
+    ip_address VARCHAR(45) NULL,
+    user_agent TEXT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 INSERT IGNORE INTO users (username, email, password_hash, role)
-VALUES ('admin', 'admin@huntertrading.local', '$2y$10$QfF8qQv7yTj9mWQ6Q6dQ6O4o2mXJXQh9jvX8nY3mVYv8y4sO7JwP2', 'admin');
+VALUES ('admin', 'admin@huntertrading.com', '$2y$10$rmcmz0oV0g5uA4961/JMtOYtJTQ93NGnBbr7jXyxG0EbWZgda6Nc6', 'admin');

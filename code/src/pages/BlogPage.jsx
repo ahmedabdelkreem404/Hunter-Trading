@@ -4,6 +4,7 @@ import { ArrowRight, Package2 } from 'lucide-react'
 import { servicesAPI, settingsAPI } from '../api'
 import useApiData from '../hooks/useApiData'
 
+// This file name is legacy. The route is the public Offers listing backed by services(type=offers).
 export default function OffersPage() {
   const { i18n } = useTranslation()
   const isArabic = i18n.language === 'ar'

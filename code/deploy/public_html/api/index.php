@@ -1,304 +1,317 @@
 <?php
-/**
- * Hunter Trading API - Entry Point
- */
 
 require_once __DIR__ . '/config/cors.php';
 require_once __DIR__ . '/config/database.php';
-require_once __DIR__ . '/config/market.php';
 
-// Parse request URI
 $requestUri = $_SERVER['REQUEST_URI'];
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
-// Remove base path and query string
-$basePath = '/api';
 $path = parse_url($requestUri, PHP_URL_PATH);
-$path = str_replace($basePath, '', $path);
+$path = preg_replace('#^/api/?#', '', $path ?? '');
 $path = trim($path, '/');
 
-// Route the request
+function jsonBody(): array
+{
+    return json_decode(file_get_contents('php://input'), true) ?? [];
+}
+
+function requireAdminAuth(): void
+{
+    require_once __DIR__ . '/controllers/AuthController.php';
+    $auth = new AuthController();
+    if (!$auth->isAuthenticated()) {
+        http_response_code(401);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+}
+
+function requireAdminCsrf(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        return;
+    }
+
+    require_once __DIR__ . '/controllers/AuthController.php';
+    $auth = new AuthController();
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!$auth->validateCsrfToken($token)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF token']);
+        exit;
+    }
+}
+
+function endpointNotFound(): void
+{
+    http_response_code(404);
+    echo json_encode(['error' => 'Endpoint not found']);
+}
+
 try {
-    switch ($path) {
-        // Public Routes - Content
-        case '':
-        case 'content/home':
-            require_once __DIR__ . '/controllers/ContentController.php';
-            $controller = new ContentController();
-            echo $controller->getHomeContent();
-            break;
-            
-        // Courses
-        case 'courses':
-            require_once __DIR__ . '/controllers/CourseController.php';
-            $controller = new CourseController();
-            echo $controller->getCourses();
-            break;
-            
-        // Signals
-        case 'signals':
-            require_once __DIR__ . '/controllers/SignalController.php';
-            $controller = new SignalController();
-            $status = $_GET['status'] ?? null;
-            echo $controller->getSignals($status);
+    if ($path === '' || $path === 'sections') {
+        require_once __DIR__ . '/controllers/SectionSettingsController.php';
+        $controller = new SectionSettingsController();
+        echo $controller->getAll();
+        return;
+    }
+
+    if ($path === 'settings/public') {
+        require_once __DIR__ . '/controllers/SettingsController.php';
+        $controller = new SettingsController();
+        echo $controller->getSettings();
+        return;
+    }
+
+    if ($path === 'coach') {
+        require_once __DIR__ . '/controllers/SettingsController.php';
+        $controller = new SettingsController();
+        echo $controller->getCoachProfile();
+        return;
+    }
+
+    if ($path === 'services') {
+        require_once __DIR__ . '/controllers/ServiceController.php';
+        $controller = new ServiceController();
+        echo $controller->getPublicServices($_GET['type'] ?? null);
+        return;
+    }
+
+    if (str_starts_with($path, 'services/')) {
+        require_once __DIR__ . '/controllers/ServiceController.php';
+        $controller = new ServiceController();
+        echo $controller->getServiceBySlug(substr($path, 9));
+        return;
+    }
+
+    if ($path === 'market/updates') {
+        require_once __DIR__ . '/controllers/MarketUpdateController.php';
+        $controller = new MarketUpdateController();
+        echo $controller->getPublicUpdates();
+        return;
+    }
+
+    if ($path === 'testimonials') {
+        require_once __DIR__ . '/controllers/TestimonialController.php';
+        $controller = new TestimonialController();
+        echo $controller->getTestimonials();
+        return;
+    }
+
+    if ($path === 'checkout/orders') {
+        require_once __DIR__ . '/controllers/PaymentOrderController.php';
+        $controller = new PaymentOrderController();
+        echo $controller->submitOrder();
+        return;
+    }
+
+    if ($path === 'leads' && $requestMethod === 'POST') {
+        require_once __DIR__ . '/controllers/LeadController.php';
+        $controller = new LeadController();
+        echo $controller->createLead(jsonBody());
+        return;
+    }
+
+    if ($path === 'analytics/track' && $requestMethod === 'POST') {
+        require_once __DIR__ . '/controllers/AnalyticsController.php';
+        $controller = new AnalyticsController();
+        echo $controller->track(jsonBody());
+        return;
+    }
+
+    if ($path === 'auth/login' && $requestMethod === 'POST') {
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        echo $controller->login(jsonBody());
+        return;
+    }
+
+    if ($path === 'auth/logout' && $requestMethod === 'POST') {
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        echo $controller->logout();
+        return;
+    }
+
+    if ($path === 'auth/check') {
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        echo $controller->check();
+        return;
+    }
+
+    if ($path === 'auth/csrf') {
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        echo $controller->csrf();
+        return;
+    }
+
+    if (!str_starts_with($path, 'admin/')) {
+        endpointNotFound();
+        return;
+    }
+
+    requireAdminAuth();
+    requireAdminCsrf();
+    $adminPath = substr($path, 6);
+
+    switch ($adminPath) {
+        case 'dashboard':
+            require_once __DIR__ . '/controllers/AdminController.php';
+            $controller = new AdminController();
+            echo $controller->getDashboard();
             break;
 
-        case 'market/live-signals':
-            require_once __DIR__ . '/controllers/MarketController.php';
-            $controller = new MarketController();
-            echo $controller->getLiveSignals();
+        case 'services':
+            require_once __DIR__ . '/controllers/ServiceController.php';
+            $controller = new ServiceController();
+            if ($requestMethod === 'GET') {
+                echo $controller->getAdminServices();
+            } elseif ($requestMethod === 'POST') {
+                echo $controller->createService(jsonBody());
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateService(jsonBody());
+            } elseif ($requestMethod === 'DELETE') {
+                echo $controller->deleteService($_GET['id'] ?? null);
+            } else {
+                endpointNotFound();
+            }
             break;
-            
-        // Testimonials
+
+        case 'orders':
+            require_once __DIR__ . '/controllers/PaymentOrderController.php';
+            $controller = new PaymentOrderController();
+            if ($requestMethod === 'GET') {
+                echo $controller->getOrders();
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateOrder(jsonBody());
+            } else {
+                endpointNotFound();
+            }
+            break;
+
+        case 'sections':
+            require_once __DIR__ . '/controllers/SectionSettingsController.php';
+            $controller = new SectionSettingsController();
+            if ($requestMethod === 'GET') {
+                echo $controller->getAll();
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateBatch(jsonBody());
+            } else {
+                endpointNotFound();
+            }
+            break;
+
+        case 'market':
+            require_once __DIR__ . '/controllers/MarketUpdateController.php';
+            $controller = new MarketUpdateController();
+            if ($requestMethod === 'GET') {
+                echo $controller->getAdminUpdates();
+            } elseif ($requestMethod === 'POST') {
+                echo $controller->createUpdate(jsonBody());
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateUpdate(jsonBody());
+            } elseif ($requestMethod === 'DELETE') {
+                echo $controller->deleteUpdate($_GET['id'] ?? null);
+            } else {
+                endpointNotFound();
+            }
+            break;
+
         case 'testimonials':
             require_once __DIR__ . '/controllers/TestimonialController.php';
             $controller = new TestimonialController();
-            echo $controller->getTestimonials();
-            break;
-            
-        // Results
-        case 'results':
-            require_once __DIR__ . '/controllers/ResultController.php';
-            $controller = new ResultController();
-            echo $controller->getResults();
-            break;
-            
-        // Blog
-        case 'blog':
-            require_once __DIR__ . '/controllers/BlogController.php';
-            $controller = new BlogController();
-            echo $controller->getPosts();
+            if ($requestMethod === 'GET') {
+                echo $controller->getTestimonials();
+            } elseif ($requestMethod === 'POST') {
+                echo $controller->createTestimonial(jsonBody());
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateTestimonial(jsonBody());
+            } elseif ($requestMethod === 'DELETE') {
+                echo $controller->deleteTestimonial($_GET['id'] ?? null);
+            } else {
+                endpointNotFound();
+            }
             break;
 
-        case 'settings/public':
+        case 'leads':
+            require_once __DIR__ . '/controllers/LeadController.php';
+            $controller = new LeadController();
+            echo $controller->getLeads();
+            break;
+
+        case 'settings':
             require_once __DIR__ . '/controllers/SettingsController.php';
             $controller = new SettingsController();
-            echo $controller->getSettings();
+            if ($requestMethod === 'GET') {
+                echo $controller->getSettings();
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->batchUpdateSettings(jsonBody());
+            } else {
+                endpointNotFound();
+            }
             break;
 
         case 'coach':
             require_once __DIR__ . '/controllers/SettingsController.php';
             $controller = new SettingsController();
-            echo $controller->getCoachProfile();
-            break;
-            
-        case 'blog/' . basename($path):
-            if (strpos($path, 'blog/') === 0) {
-                $slug = substr($path, 5);
-                require_once __DIR__ . '/controllers/BlogController.php';
-                $controller = new BlogController();
-                echo $controller->getPost($slug);
-            }
-            break;
-            
-        // Leads
-        case 'leads':
-            require_once __DIR__ . '/controllers/LeadController.php';
-            $controller = new LeadController();
-            if ($requestMethod === 'POST') {
-                $data = json_decode(file_get_contents('php://input'), true);
-                echo $controller->createLead($data);
-            }
-            break;
-            
-        // Analytics
-        case 'analytics/track':
-            require_once __DIR__ . '/controllers/AnalyticsController.php';
-            $controller = new AnalyticsController();
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo $controller->track($data);
-            break;
-            
-        // Affiliate
-        case 'affiliate/click':
-            require_once __DIR__ . '/controllers/AffiliateController.php';
-            $controller = new AffiliateController();
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo $controller->trackClick($data);
-            break;
-            
-        // Auth
-        case 'auth/login':
-            require_once __DIR__ . '/controllers/AuthController.php';
-            $controller = new AuthController();
-            $data = json_decode(file_get_contents('php://input'), true);
-            echo $controller->login($data);
-            break;
-            
-        case 'auth/logout':
-            require_once __DIR__ . '/controllers/AuthController.php';
-            $controller = new AuthController();
-            echo $controller->logout();
-            break;
-            
-        case 'auth/check':
-            require_once __DIR__ . '/controllers/AuthController.php';
-            $controller = new AuthController();
-            echo $controller->check();
-            break;
-            
-        // Admin Routes
-        default:
-            if (strpos($path, 'admin/') === 0) {
-                // Admin routes require authentication
-                require_once __DIR__ . '/controllers/AuthController.php';
-                $auth = new AuthController();
-                if (!$auth->isAuthenticated()) {
-                    http_response_code(401);
-                    echo json_encode(['error' => 'Unauthorized']);
-                    break;
-                }
-                
-                $adminPath = substr($path, 6);
-                
-                switch ($adminPath) {
-                    case 'dashboard':
-                        require_once __DIR__ . '/controllers/AdminController.php';
-                        $controller = new AdminController();
-                        echo $controller->getDashboard();
-                        break;
-                        
-                    case 'content':
-                        require_once __DIR__ . '/controllers/ContentController.php';
-                        $controller = new ContentController();
-                        if ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updateContent($data);
-                        }
-                        break;
-                        
-                    case 'courses':
-                        require_once __DIR__ . '/controllers/CourseController.php';
-                        $controller = new CourseController();
-                        if ($requestMethod === 'POST') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->createCourse($data);
-                        } elseif ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updateCourse($data);
-                        } elseif ($requestMethod === 'DELETE') {
-                            $id = $_GET['id'] ?? null;
-                            echo $controller->deleteCourse($id);
-                        }
-                        break;
-                        
-                    case 'signals':
-                        require_once __DIR__ . '/controllers/SignalController.php';
-                        $controller = new SignalController();
-                        if ($requestMethod === 'POST') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->createSignal($data);
-                        } elseif ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updateSignal($data);
-                        }
-                        break;
-
-                    case 'testimonials':
-                        require_once __DIR__ . '/controllers/TestimonialController.php';
-                        $controller = new TestimonialController();
-                        if ($requestMethod === 'GET') {
-                            echo $controller->getTestimonials();
-                        } elseif ($requestMethod === 'POST') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->createTestimonial($data);
-                        } elseif ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updateTestimonial($data);
-                        } elseif ($requestMethod === 'DELETE') {
-                            $id = $_GET['id'] ?? null;
-                            echo $controller->deleteTestimonial($id);
-                        }
-                        break;
-
-                    case 'blog':
-                        require_once __DIR__ . '/controllers/BlogController.php';
-                        $controller = new BlogController();
-                        if ($requestMethod === 'GET') {
-                            echo $controller->getAdminPosts();
-                        } elseif ($requestMethod === 'POST') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->createPost($data);
-                        } elseif ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updatePost($data);
-                        } elseif ($requestMethod === 'DELETE') {
-                            $id = $_GET['id'] ?? null;
-                            echo $controller->deletePost($id);
-                        }
-                        break;
-                        
-                    case 'leads':
-                        require_once __DIR__ . '/controllers/LeadController.php';
-                        $controller = new LeadController();
-                        echo $controller->getLeads();
-                        break;
-                        
-                    case 'settings':
-                        require_once __DIR__ . '/controllers/SettingsController.php';
-                        $controller = new SettingsController();
-                        if ($requestMethod === 'GET') {
-                            echo $controller->getSettings();
-                        } elseif ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->batchUpdateSettings($data);
-                        }
-                        break;
-                        
-                    case 'settings/single':
-                        require_once __DIR__ . '/controllers/SettingsController.php';
-                        $controller = new SettingsController();
-                        if ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updateSetting($data);
-                        } else {
-                            $key = $_GET['key'] ?? '';
-                            echo $controller->getSetting($key);
-                        }
-                        break;
-                        
-                    case 'coach':
-                        require_once __DIR__ . '/controllers/SettingsController.php';
-                        $controller = new SettingsController();
-                        if ($requestMethod === 'GET') {
-                            echo $controller->getCoachProfile();
-                        } elseif ($requestMethod === 'PUT') {
-                            $data = json_decode(file_get_contents('php://input'), true);
-                            echo $controller->updateCoachProfile($data);
-                        }
-                        break;
-                        
-                    case 'coach/upload':
-                        require_once __DIR__ . '/controllers/SettingsController.php';
-                        $controller = new SettingsController();
-                        echo $controller->uploadCoachImage();
-                        break;
-                        
-                    case 'media':
-                        require_once __DIR__ . '/controllers/SettingsController.php';
-                        $controller = new SettingsController();
-                        if ($requestMethod === 'POST') {
-                            echo $controller->uploadMedia();
-                        } else {
-                            echo $controller->getMedia();
-                        }
-                        break;
-                        
-                    case 'media/delete':
-                        require_once __DIR__ . '/controllers/SettingsController.php';
-                        $controller = new SettingsController();
-                        $id = $_GET['id'] ?? null;
-                        echo $controller->deleteMedia($id);
-                        break;
-                        
-                    default:
-                        http_response_code(404);
-                        echo json_encode(['error' => 'Endpoint not found']);
-                }
+            if ($requestMethod === 'GET') {
+                echo $controller->getCoachProfile();
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateCoachProfile(jsonBody());
             } else {
-                http_response_code(404);
-                echo json_encode(['error' => 'Endpoint not found']);
+                endpointNotFound();
             }
+            break;
+
+        case 'coach/upload':
+            require_once __DIR__ . '/controllers/SettingsController.php';
+            $controller = new SettingsController();
+            echo $controller->uploadCoachImage();
+            break;
+
+        case 'coach/social-links':
+            require_once __DIR__ . '/controllers/SettingsController.php';
+            $controller = new SettingsController();
+            if ($requestMethod === 'GET') {
+                echo $controller->getCoachSocialLinks();
+            } elseif ($requestMethod === 'POST') {
+                echo $controller->createCoachSocialLink(jsonBody());
+            } elseif ($requestMethod === 'PUT') {
+                echo $controller->updateCoachSocialLink(jsonBody());
+            } else {
+                endpointNotFound();
+            }
+            break;
+
+        case 'coach/social-links/delete':
+            require_once __DIR__ . '/controllers/SettingsController.php';
+            $controller = new SettingsController();
+            echo $controller->deleteCoachSocialLink($_GET['id'] ?? null);
+            break;
+
+        case 'media':
+            require_once __DIR__ . '/controllers/SettingsController.php';
+            $controller = new SettingsController();
+            if ($requestMethod === 'POST') {
+                echo $controller->uploadMedia();
+            } elseif ($requestMethod === 'GET') {
+                echo $controller->getMedia();
+            } else {
+                endpointNotFound();
+            }
+            break;
+
+        case 'media/delete':
+            require_once __DIR__ . '/controllers/SettingsController.php';
+            $controller = new SettingsController();
+            echo $controller->deleteMedia($_GET['id'] ?? null);
+            break;
+
+        default:
+            endpointNotFound();
+            break;
     }
 } catch (Exception $e) {
     http_response_code(500);

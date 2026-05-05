@@ -1,6 +1,8 @@
 import axios from 'axios'
 
 const API_BASE = '/api'
+let csrfToken = ''
+const publicGetCache = new Map()
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -8,6 +10,44 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+})
+
+export function setCsrfToken(token) {
+  csrfToken = token || ''
+}
+
+function cachedGet(url, options = {}, ttl = 60000) {
+  const key = `${url}:${JSON.stringify(options.params || {})}`
+  const cached = publicGetCache.get(key)
+  const now = Date.now()
+
+  if (cached?.data && now - cached.timestamp < ttl) {
+    return Promise.resolve(cached.data)
+  }
+
+  if (cached?.promise) {
+    return cached.promise
+  }
+
+  const promise = api.get(url, options).then((data) => {
+    publicGetCache.set(key, { data, timestamp: Date.now(), promise: null })
+    return data
+  }).catch((error) => {
+    publicGetCache.delete(key)
+    throw error
+  })
+
+  publicGetCache.set(key, { data: cached?.data, timestamp: cached?.timestamp || 0, promise })
+  return promise
+}
+
+api.interceptors.request.use((config) => {
+  const method = String(config.method || 'get').toLowerCase()
+  if (csrfToken && ['post', 'put', 'delete', 'patch'].includes(method)) {
+    config.headers = config.headers || {}
+    config.headers['X-CSRF-Token'] = csrfToken
+  }
+  return config
 })
 
 // Response interceptor for error handling
@@ -20,20 +60,20 @@ api.interceptors.response.use(
 )
 
 export const settingsAPI = {
-  getPublic: () => api.get('/settings/public'),
+  getPublic: () => cachedGet('/settings/public', {}, 60000),
 }
 
 export const sectionSettingsAPI = {
-  getPublic: () => api.get('/sections'),
+  getPublic: () => cachedGet('/sections', {}, 60000),
 }
 
 export const coachAPI = {
-  getProfile: () => api.get('/coach'),
+  getProfile: () => cachedGet('/coach', {}, 60000),
 }
 
 export const servicesAPI = {
-  getAll: (type) => api.get('/services', { params: { type } }),
-  getBySlug: (slug) => api.get(`/services/${slug}`),
+  getAll: (type) => cachedGet('/services', { params: { type } }, 30000),
+  getBySlug: (slug) => cachedGet(`/services/${slug}`, {}, 30000),
 }
 
 export const checkoutAPI = {
@@ -44,12 +84,12 @@ export const checkoutAPI = {
 }
 
 export const marketAPI = {
-  getPublic: () => api.get('/market/updates'),
+  getPublic: () => cachedGet('/market/updates', {}, 15000),
 }
 
 // Testimonials API
 export const testimonialsAPI = {
-  getAll: () => api.get('/testimonials'),
+  getAll: () => cachedGet('/testimonials', {}, 60000),
 }
 
 // Leads API
@@ -67,6 +107,7 @@ export const authAPI = {
   login: (credentials) => api.post('/auth/login', credentials),
   logout: () => api.post('/auth/logout'),
   check: () => api.get('/auth/check'),
+  csrf: () => api.get('/auth/csrf'),
 }
 
 // Admin API

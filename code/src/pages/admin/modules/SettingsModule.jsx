@@ -8,7 +8,7 @@ export default function SettingsModule({ settings, setSettings, siteLogoFile, se
         action={<ActionButton onClick={onSave} className="w-full bg-green-600 text-white sm:w-auto">{saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}</ActionButton>}
       >
         <div className="grid gap-4 md:grid-cols-2">
-          <FilePicker label="شعار الموقع" preview={settings.site_logo || ''} onChange={setSiteLogoFile} buttonLabel={siteLogoFile?.name || 'اختر الشعار'} />
+          <FilePicker label="شعار الموقع" preview={settings.site_logo || ''} onChange={setSiteLogoFile} buttonLabel={siteLogoFile?.name || 'اختر الشعار'} accept="image/*" />
           <Field label="اسم الموقع" value={settings.website_name || ''} onChange={(e) => setSettings((current) => ({ ...current, website_name: e.target.value }))} />
           <Field label="البريد الإداري" value={settings.support_email || ''} onChange={(e) => setSettings((current) => ({ ...current, support_email: e.target.value }))} />
           <Field label="رابط تيليجرام" value={settings.telegram_url || ''} onChange={(e) => setSettings((current) => ({ ...current, telegram_url: e.target.value }))} />

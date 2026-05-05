@@ -4,7 +4,7 @@
  */
 
 if (!function_exists('loadEnvFile')) {
-    function loadEnvFile($path) {
+    function loadEnvFile($path, $override = true) {
         if (!file_exists($path)) {
             return;
         }
@@ -24,7 +24,7 @@ if (!function_exists('loadEnvFile')) {
             $key = trim($key);
             $value = trim($value);
 
-            if ($key !== '' && getenv($key) === false) {
+            if ($key !== '' && ($override || getenv($key) === false)) {
                 putenv("{$key}={$value}");
                 $_ENV[$key] = $value;
             }

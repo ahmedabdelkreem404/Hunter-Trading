@@ -9,8 +9,24 @@ class PaymentOrderController {
     }
 
     private function storeUploadedFile(array $file) {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        if (!in_array($file['type'], $allowedTypes, true)) {
+        $allowedTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+        ];
+
+        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new Exception('Upload failed');
+        }
+
+        if (($file['size'] ?? 0) > 10 * 1024 * 1024) {
+            throw new Exception('File too large. Maximum size: 10MB');
+        }
+
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        if (!isset($allowedTypes[$mimeType])) {
             throw new Exception('Invalid file type');
         }
 
@@ -19,7 +35,7 @@ class PaymentOrderController {
             mkdir($uploadDir, 0755, true);
         }
 
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $extension = $allowedTypes[$mimeType];
         $filename = 'payment_' . time() . '_' . uniqid() . '.' . $extension;
         $filepath = $uploadDir . $filename;
 
@@ -30,7 +46,7 @@ class PaymentOrderController {
         $relativePath = '/uploads/payment-orders/' . $filename;
         insert(
             "INSERT INTO media (filename, filepath, mimetype, size_bytes) VALUES (?, ?, ?, ?)",
-            [$file['name'], $relativePath, $file['type'], $file['size']]
+            [$file['name'], $relativePath, $mimeType, $file['size']]
         );
         return $relativePath;
     }

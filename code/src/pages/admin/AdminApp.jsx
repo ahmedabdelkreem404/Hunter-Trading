@@ -13,7 +13,7 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { adminAPI, authAPI } from '../../api'
+import { adminAPI, authAPI, setCsrfToken } from '../../api'
 import DashboardOverviewModule from './modules/DashboardOverviewModule'
 import WebsiteContentModule from './modules/WebsiteContentModule'
 import ServicesModule from './modules/ServicesModule'
@@ -42,12 +42,35 @@ const emptyService = {
   cta_label_en: 'Buy Now',
   cta_label_ar: 'اشتر الآن',
   cta_url: '',
+  cta_action: 'checkout',
+  referral_url: '',
+  broker_name: '',
+  broker_url: '',
   badge_text_en: '',
   badge_text_ar: '',
   thumbnail_url: '',
   cover_url: '',
+  cover_media_type: 'image',
+  cover_video_poster_url: '',
+  card_media_type: 'image',
+  card_media_url: '',
+  card_video_poster_url: '',
+  card_video_autoplay: false,
+  card_video_muted: true,
+  card_video_loop: true,
   offer_starts_at: '',
   offer_ends_at: '',
+  terms_title_en: '',
+  terms_title_ar: '',
+  terms_content_en: '',
+  terms_content_ar: '',
+  risk_warning_en: '',
+  risk_warning_ar: '',
+  important_links: [{ label_en: '', label_ar: '', url: '', new_tab: true, sort_order: 1 }],
+  details_button_label_en: 'Details',
+  details_button_label_ar: 'التفاصيل',
+  final_cta_label_en: 'Continue',
+  final_cta_label_ar: 'متابعة',
   sort_order: 0,
   is_visible: true,
   is_featured: false,
@@ -264,6 +287,9 @@ export default function AdminApp() {
       return
     }
 
+    const csrfRes = await authAPI.csrf()
+    setCsrfToken(csrfRes.data?.csrf_token || '')
+
     const [
       dashboardRes,
       sectionsRes,
@@ -355,7 +381,14 @@ export default function AdminApp() {
 
       if (serviceImageFile) {
         const upload = await adminAPI.uploadMedia(serviceImageFile)
-        payload = { ...payload, thumbnail_url: upload.data?.url, cover_url: upload.data?.url }
+        const mimetype = upload.data?.mimetype || serviceImageFile.type || ''
+        const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
+        payload = {
+          ...payload,
+          card_media_url: upload.data?.url,
+          card_media_type: mediaType,
+          ...(mediaType === 'image' ? { thumbnail_url: upload.data?.url, cover_url: upload.data?.url } : {}),
+        }
       }
 
       await adminAPI.createService(payload)
@@ -389,6 +422,10 @@ export default function AdminApp() {
   }
 
   const deleteService = async (id) => {
+    if (!window.confirm('Delete this service?')) {
+      return
+    }
+
     setSaving(`service-delete-${id}`)
     try {
       await adminAPI.deleteService(id)
@@ -406,11 +443,22 @@ export default function AdminApp() {
     setSaving(`service-image-${service.id}`)
     try {
       const upload = await adminAPI.uploadMedia(file)
+      const mimetype = upload.data?.mimetype || file.type || ''
+      const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
       setServices((current) =>
-        current.map((item) => (item.id === service.id ? { ...item, thumbnail_url: upload.data?.url, cover_url: upload.data?.url } : item))
+        current.map((item) =>
+          item.id === service.id
+            ? {
+                ...item,
+                card_media_url: upload.data?.url,
+                card_media_type: mediaType,
+                ...(mediaType === 'image' ? { thumbnail_url: upload.data?.url, cover_url: upload.data?.url } : {}),
+              }
+            : item
+        )
       )
       await refreshMedia()
-      setFlash('Image uploaded. Save the service to keep the change.')
+      setFlash('Media uploaded. Save the service to keep the change.')
     } catch (error) {
       handleError(error, 'Failed to upload image')
     } finally {
@@ -471,6 +519,10 @@ export default function AdminApp() {
   }
 
   const deleteTestimonial = async (id) => {
+    if (!window.confirm('Delete this testimonial?')) {
+      return
+    }
+
     setSaving(`testimonial-delete-${id}`)
     try {
       await adminAPI.deleteTestimonial(id)
@@ -533,6 +585,10 @@ export default function AdminApp() {
   }
 
   const deleteMarketUpdate = async (id) => {
+    if (!window.confirm('Delete this market update?')) {
+      return
+    }
+
     setSaving(`market-delete-${id}`)
     try {
       await adminAPI.deleteMarketUpdate(id)
@@ -607,6 +663,10 @@ export default function AdminApp() {
   }
 
   const deleteCoachSocial = async (id) => {
+    if (!window.confirm('Delete this social link?')) {
+      return
+    }
+
     setSaving(`social-delete-${id}`)
     try {
       await adminAPI.deleteCoachSocialLink(id)
@@ -635,6 +695,10 @@ export default function AdminApp() {
   }
 
   const deleteMedia = async (id) => {
+    if (!window.confirm('Delete this media file?')) {
+      return
+    }
+
     setSaving(`media-delete-${id}`)
     try {
       await adminAPI.deleteMedia(id)
@@ -726,7 +790,7 @@ export default function AdminApp() {
           {message ? <div className="rounded-2xl border border-hunter-green/20 bg-hunter-green/15 px-4 py-3 text-hunter-green">{message}</div> : null}
 
           {activeTab === 'overview' ? <DashboardOverviewModule dashboard={dashboard} servicesCount={services.length} pendingOrders={pendingOrders} /> : null}
-          {activeTab === 'website' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} /> : null}
+          {activeTab === 'website' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} media={media} /> : null}
           {activeTab === 'services' ? (
             <ServicesModule
               services={services}

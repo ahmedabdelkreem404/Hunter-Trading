@@ -1,13 +1,11 @@
-import { Suspense } from 'react'
 import { useTranslation } from 'react-i18next'
 import { motion } from 'framer-motion'
-import { Canvas } from '@react-three/fiber'
 import { ChevronDown } from 'lucide-react'
-import TradingScene from '../three/TradingScene'
+import HeroVideo from '../ui/HeroVideo'
 import { sectionSettingsAPI, settingsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 
-const LIVE_REFRESH_INTERVAL = 10000
+const LIVE_REFRESH_INTERVAL = 0
 
 const TelegramIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-5 h-5">
@@ -141,15 +139,7 @@ export default function Hero({ primaryCtaId = 'vip', scrollTargetId = 'funded' }
             transition={{ duration: 0.7, delay: 0.15 }}
             className="relative order-first h-[320px] sm:h-[440px] lg:order-none lg:h-[600px]"
           >
-            <Canvas camera={{ position: [0, 0, 10], fov: 50 }} dpr={[1, 2]} className="!absolute inset-0">
-              <Suspense fallback={null}>
-                <TradingScene />
-              </Suspense>
-            </Canvas>
-
-            <div className="pointer-events-none absolute inset-0">
-              <div className="absolute bottom-0 left-1/2 h-1 w-3/4 -translate-x-1/2 bg-hunter-green/30 blur-xl" />
-            </div>
+            <HeroVideo settings={hero.settings || {}} title={title || t('hero.title')} />
           </motion.div>
         </div>
       </div>

@@ -65,7 +65,7 @@ export default function AdminLogin() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 rounded-lg bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 text-gray-900 dark:text-white focus:ring-2 focus:ring-hunter-green focus:border-transparent transition-all"
-                  placeholder="admin@hunter_tradeing.com"
+                  placeholder="admin@huntertrading.com"
                   required
                 />
               </div>

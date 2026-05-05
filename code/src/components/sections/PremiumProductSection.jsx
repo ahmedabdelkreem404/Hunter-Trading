@@ -9,6 +9,7 @@ import {
   Crown,
   Flame,
   GraduationCap,
+  Info,
   Package2,
   ShieldCheck,
 } from 'lucide-react'
@@ -16,7 +17,7 @@ import { sectionSettingsAPI, servicesAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 
 const selectServices = (response) => response.data ?? []
-const LIVE_REFRESH_INTERVAL = 15000
+const LIVE_REFRESH_INTERVAL = 0
 
 const categoryMeta = {
   vip: { icon: Crown, accent: 'var(--accent-primary)', accentStrong: 'var(--accent-primary-strong)' },
@@ -78,6 +79,97 @@ function TopChip({ icon: Icon, children }) {
       {Icon ? <Icon className="h-3.5 w-3.5" /> : null}
       <span>{children}</span>
     </div>
+  )
+}
+
+function isVideoUrl(url = '') {
+  return /\.(mp4|webm|mov)(\?|#|$)/i.test(url)
+}
+
+function asBool(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  return value === true || value === 1 || value === '1'
+}
+
+function ProductCardMedia({ product, title }) {
+  const explicitMediaUrl = product.card_media_url || ''
+  const mediaType = product.card_media_type || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
+  const fallbackImageUrl = product.thumbnail_url || product.cover_url || ''
+  const mediaUrl = explicitMediaUrl || fallbackImageUrl
+
+  if (mediaType === 'video' && explicitMediaUrl) {
+    return (
+      <video
+        src={explicitMediaUrl}
+        poster={product.card_video_poster_url || product.thumbnail_url || undefined}
+        className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+        autoPlay={asBool(product.card_video_autoplay, false) && asBool(product.card_video_muted, true)}
+        muted={asBool(product.card_video_muted, true)}
+        loop={asBool(product.card_video_loop, true)}
+        playsInline
+        preload="metadata"
+      />
+    )
+  }
+
+  if (mediaType === 'embed' && explicitMediaUrl) {
+    return (
+      <iframe
+        src={explicitMediaUrl}
+        title={title}
+        className="h-44 w-full"
+        loading="lazy"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    )
+  }
+
+  if (mediaUrl) {
+    return (
+      <img
+        src={mediaUrl}
+        alt={title}
+        className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+      />
+    )
+  }
+
+  return (
+    <div className="flex h-44 items-center justify-center">
+      <Package2 className="h-14 w-14 text-hunter-text" />
+    </div>
+  )
+}
+
+function resolveCardAction(product, isScalp) {
+  const action = product.cta_action || (isScalp ? 'details' : 'checkout')
+
+  if (isScalp && !['checkout', 'external', 'whatsapp', 'telegram'].includes(action)) {
+    return { href: `/services/${product.slug}`, external: false }
+  }
+
+  if (action === 'details') return { href: `/services/${product.slug}`, external: false }
+  if (action === 'checkout') return { href: `/checkout/${product.slug}`, external: false }
+  if (action === 'referral') return { href: product.referral_url || product.cta_url || `/services/${product.slug}`, external: !!(product.referral_url || product.cta_url) }
+  if (['external', 'whatsapp', 'telegram'].includes(action)) return { href: product.cta_url || product.referral_url || `/services/${product.slug}`, external: !!(product.cta_url || product.referral_url) }
+
+  return { href: isScalp ? `/services/${product.slug}` : `/checkout/${product.slug}`, external: false }
+}
+
+function CardAction({ action, children, className, style }) {
+  if (action.external) {
+    return (
+      <a href={action.href} target="_blank" rel="noreferrer" className={className} style={style}>
+        {children}
+      </a>
+    )
+  }
+
+  return (
+    <Link to={action.href} className={className} style={style}>
+      {children}
+    </Link>
   )
 }
 
@@ -173,6 +265,9 @@ export default function PremiumProductSection({
                 const features = getFeatures(product, isArabic)
                 const ribbonText = isArabic ? product.badge_text_ar || product.badge_text_en : product.badge_text_en || product.badge_text_ar
                 const productTitle = isArabic ? product.title_ar || product.title_en : product.title_en || product.title_ar
+                const isScalp = category === 'scalp' || product.type === 'scalp'
+                const action = resolveCardAction(product, isScalp)
+                const detailsLabel = isArabic ? product.details_button_label_ar || 'التفاصيل' : product.details_button_label_en || 'Details'
 
                 return (
                   <motion.article
@@ -219,17 +314,7 @@ export default function PremiumProductSection({
                           background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 95%, white 5%) 0%, color-mix(in srgb, var(--bg-secondary) 98%, transparent) 100%)',
                         }}
                       >
-                        {product.thumbnail_url || product.cover_url ? (
-                          <img
-                            src={product.thumbnail_url || product.cover_url}
-                            alt={productTitle}
-                            className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
-                          />
-                        ) : (
-                          <div className="flex h-44 items-center justify-center">
-                            <Package2 className="h-14 w-14 text-hunter-text" />
-                          </div>
-                        )}
+                        <ProductCardMedia product={product} title={productTitle} />
                       </div>
 
                       <div className={centerCardContent ? 'text-center' : ''}>
@@ -253,17 +338,30 @@ export default function PremiumProductSection({
                         </div>
                       ) : null}
 
-                      <Link
-                        to={`/checkout/${product.slug}`}
-                        className="mt-6 inline-flex w-full items-center justify-center gap-2 rounded-2xl px-5 py-3 font-semibold text-hunter-bg transition hover:-translate-y-0.5"
-                        style={{
-                          background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
-                          boxShadow: '0 10px 22px color-mix(in srgb, var(--product-accent) 14%, transparent)',
-                        }}
-                      >
-                        <span>{isArabic ? product.cta_label_ar || 'اشتر الآن' : product.cta_label_en || 'Buy Now'}</span>
-                        <ArrowRight className="h-4 w-4 rtl:rotate-180" />
-                      </Link>
+                      <div className="mt-6 flex gap-2">
+                        <CardAction
+                          action={action}
+                          className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 font-semibold text-hunter-bg transition hover:-translate-y-0.5"
+                          style={{
+                            background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
+                            boxShadow: '0 10px 22px color-mix(in srgb, var(--product-accent) 14%, transparent)',
+                          }}
+                        >
+                          <span className="truncate">{isArabic ? product.cta_label_ar || 'اشتر الآن' : product.cta_label_en || 'Buy Now'}</span>
+                          <ArrowRight className="h-4 w-4 shrink-0 rtl:rotate-180" />
+                        </CardAction>
+
+                        {isScalp ? (
+                          <Link
+                            to={`/services/${product.slug}`}
+                            aria-label={`${detailsLabel}: ${productTitle}`}
+                            title={detailsLabel}
+                            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green"
+                          >
+                            <Info className="h-5 w-5" />
+                          </Link>
+                        ) : null}
+                      </div>
                     </div>
                   </motion.article>
                 )

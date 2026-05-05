@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next'
 import { settingsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 
-const LIVE_REFRESH_INTERVAL = 10000
+const LIVE_REFRESH_INTERVAL = 0
 
 const TelegramIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="w-7 h-7">

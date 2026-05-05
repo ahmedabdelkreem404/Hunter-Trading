@@ -6,6 +6,8 @@ require_once __DIR__ . '/../lib/PlatformBootstrap.php';
 class ServiceController
 {
     private array $allowedTypes = ['funded', 'vip', 'scalp', 'courses', 'offers'];
+    private array $allowedMediaTypes = ['image', 'video', 'embed'];
+    private array $allowedCtaActions = ['checkout', 'details', 'external', 'referral', 'whatsapp', 'telegram'];
 
     public function getPublicServices(?string $type = null)
     {
@@ -98,8 +100,12 @@ class ServiceController
                 "INSERT INTO services
                 (type, slug, title_en, title_ar, subtitle_en, subtitle_ar, short_description_en, short_description_ar, full_description_en, full_description_ar,
                  price, compare_price, currency, cta_label_en, cta_label_ar, cta_url, badge_text_en, badge_text_ar, thumbnail_url, cover_url,
-                 offer_starts_at, offer_ends_at, is_featured, is_visible, sort_order, metadata_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                 cover_media_type, cover_video_poster_url, card_media_type, card_media_url, card_video_poster_url, card_video_autoplay,
+                 card_video_muted, card_video_loop, offer_starts_at, offer_ends_at, cta_action, referral_url, broker_name, broker_url,
+                 terms_title_en, terms_title_ar, terms_content_en, terms_content_ar, risk_warning_en, risk_warning_ar, important_links_json,
+                 details_button_label_en, details_button_label_ar, final_cta_label_en, final_cta_label_ar,
+                 is_featured, is_visible, sort_order, metadata_json)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $data['type'],
                     $data['slug'],
@@ -121,8 +127,31 @@ class ServiceController
                     $data['badge_text_ar'] ?? null,
                     $data['thumbnail_url'] ?? null,
                     $data['cover_url'] ?? null,
+                    $this->normalizeMediaType($data['cover_media_type'] ?? 'image'),
+                    $data['cover_video_poster_url'] ?? null,
+                    $this->normalizeMediaType($data['card_media_type'] ?? 'image'),
+                    $data['card_media_url'] ?? null,
+                    $data['card_video_poster_url'] ?? null,
+                    isset($data['card_video_autoplay']) ? (int) !!$data['card_video_autoplay'] : 0,
+                    isset($data['card_video_muted']) ? (int) !!$data['card_video_muted'] : 1,
+                    isset($data['card_video_loop']) ? (int) !!$data['card_video_loop'] : 1,
                     !empty($data['offer_starts_at']) ? $data['offer_starts_at'] : null,
                     !empty($data['offer_ends_at']) ? $data['offer_ends_at'] : null,
+                    $this->normalizeCtaAction($data['cta_action'] ?? 'checkout'),
+                    $data['referral_url'] ?? null,
+                    $data['broker_name'] ?? null,
+                    $data['broker_url'] ?? null,
+                    $data['terms_title_en'] ?? null,
+                    $data['terms_title_ar'] ?? null,
+                    $data['terms_content_en'] ?? null,
+                    $data['terms_content_ar'] ?? null,
+                    $data['risk_warning_en'] ?? null,
+                    $data['risk_warning_ar'] ?? null,
+                    isset($data['important_links']) ? json_encode($data['important_links'], JSON_UNESCAPED_UNICODE) : null,
+                    $data['details_button_label_en'] ?? null,
+                    $data['details_button_label_ar'] ?? null,
+                    $data['final_cta_label_en'] ?? null,
+                    $data['final_cta_label_ar'] ?? null,
                     isset($data['is_featured']) ? (int) !!$data['is_featured'] : 0,
                     isset($data['is_visible']) ? (int) !!$data['is_visible'] : 1,
                     (int) ($data['sort_order'] ?? 0),
@@ -159,8 +188,13 @@ class ServiceController
                 'type', 'slug', 'title_en', 'title_ar', 'subtitle_en', 'subtitle_ar',
                 'short_description_en', 'short_description_ar', 'full_description_en', 'full_description_ar',
                 'price', 'compare_price', 'currency', 'cta_label_en', 'cta_label_ar', 'cta_url',
-                'badge_text_en', 'badge_text_ar', 'thumbnail_url', 'cover_url', 'offer_starts_at',
-                'offer_ends_at', 'is_featured', 'is_visible', 'sort_order',
+                'badge_text_en', 'badge_text_ar', 'thumbnail_url', 'cover_url', 'cover_media_type',
+                'cover_video_poster_url', 'card_media_type', 'card_media_url', 'card_video_poster_url',
+                'card_video_autoplay', 'card_video_muted', 'card_video_loop', 'offer_starts_at',
+                'offer_ends_at', 'cta_action', 'referral_url', 'broker_name', 'broker_url',
+                'terms_title_en', 'terms_title_ar', 'terms_content_en', 'terms_content_ar',
+                'risk_warning_en', 'risk_warning_ar', 'details_button_label_en', 'details_button_label_ar',
+                'final_cta_label_en', 'final_cta_label_ar', 'is_featured', 'is_visible', 'sort_order',
             ];
 
             foreach ($allowed as $field) {
@@ -171,13 +205,22 @@ class ServiceController
                 $fields[] = "{$field} = ?";
                 if (in_array($field, ['price', 'compare_price'], true)) {
                     $params[] = $data[$field] === '' || $data[$field] === null ? null : (float) $data[$field];
-                } elseif (in_array($field, ['is_featured', 'is_visible', 'sort_order'], true)) {
+                } elseif (in_array($field, ['is_featured', 'is_visible', 'sort_order', 'card_video_autoplay', 'card_video_muted', 'card_video_loop'], true)) {
                     $params[] = (int) $data[$field];
                 } elseif (in_array($field, ['offer_starts_at', 'offer_ends_at'], true)) {
                     $params[] = !empty($data[$field]) ? $data[$field] : null;
+                } elseif (in_array($field, ['cover_media_type', 'card_media_type'], true)) {
+                    $params[] = $this->normalizeMediaType($data[$field]);
+                } elseif ($field === 'cta_action') {
+                    $params[] = $this->normalizeCtaAction($data[$field]);
                 } else {
                     $params[] = $data[$field];
                 }
+            }
+
+            if (array_key_exists('important_links', $data)) {
+                $fields[] = "important_links_json = ?";
+                $params[] = json_encode($data['important_links'] ?? [], JSON_UNESCAPED_UNICODE);
             }
 
             if (array_key_exists('metadata', $data)) {
@@ -235,7 +278,29 @@ class ServiceController
             return json_encode(['success' => false, 'error' => 'Invalid service type']);
         }
 
+        foreach (['card_media_type', 'cover_media_type'] as $field) {
+            if (!empty($data[$field]) && !in_array($data[$field], $this->allowedMediaTypes, true)) {
+                http_response_code(400);
+                return json_encode(['success' => false, 'error' => 'Invalid media type']);
+            }
+        }
+
+        if (!empty($data['cta_action']) && !in_array($data['cta_action'], $this->allowedCtaActions, true)) {
+            http_response_code(400);
+            return json_encode(['success' => false, 'error' => 'Invalid CTA action']);
+        }
+
         return null;
+    }
+
+    private function normalizeMediaType(?string $value): string
+    {
+        return in_array($value, $this->allowedMediaTypes, true) ? $value : 'image';
+    }
+
+    private function normalizeCtaAction(?string $value): string
+    {
+        return in_array($value, $this->allowedCtaActions, true) ? $value : 'checkout';
     }
 
     private function replaceRelations(int $serviceId, array $data): void
@@ -308,7 +373,7 @@ class ServiceController
                     [
                         $serviceId,
                         $url,
-                        $media['media_type'] ?? 'image',
+                        $this->normalizeMediaType($media['media_type'] ?? 'image'),
                         $media['alt_text_en'] ?? null,
                         $media['alt_text_ar'] ?? null,
                         $index + 1,
@@ -322,7 +387,9 @@ class ServiceController
     {
         $serviceId = (int) $row['id'];
         $row['metadata'] = !empty($row['metadata_json']) ? json_decode($row['metadata_json'], true) : [];
+        $row['important_links'] = !empty($row['important_links_json']) ? json_decode($row['important_links_json'], true) : [];
         unset($row['metadata_json']);
+        unset($row['important_links_json']);
 
         $row['features'] = fetchAll(
             "SELECT id, label_en, label_ar, sort_order FROM service_features WHERE service_id = ? ORDER BY sort_order ASC, id ASC",

@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/../lib/PlatformBootstrap.php';
 
 class TestimonialController {
     private function deleteManagedFile(?string $relativePath) {
@@ -17,7 +18,14 @@ class TestimonialController {
 
     public function getTestimonials() {
         try {
-            $testimonials = fetchAll("SELECT * FROM testimonials ORDER BY order_index ASC");
+            PlatformBootstrap::ensure();
+            $isAdmin = (isset($_SERVER['REQUEST_URI']) && strpos($_SERVER['REQUEST_URI'], '/admin/') !== false);
+            $sql = "SELECT * FROM testimonials";
+            if (!$isAdmin) {
+                $sql .= " WHERE is_visible = 1 AND is_approved = 1";
+            }
+            $sql .= " ORDER BY is_featured DESC, order_index ASC, id DESC";
+            $testimonials = fetchAll($sql);
             return json_encode(['success' => true, 'data' => $testimonials]);
         } catch (Exception $e) {
             http_response_code(500);
@@ -33,8 +41,9 @@ class TestimonialController {
             }
 
             $id = insert(
-                "INSERT INTO testimonials (name, location, image_url, video_url, content_en, content_ar, rating, order_index)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+                "INSERT INTO testimonials
+                (name, location, image_url, video_url, content_en, content_ar, rating, service_type, service_id, is_featured, is_approved, is_visible, order_index)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $data['name'],
                     $data['location'] ?? null,
@@ -43,6 +52,11 @@ class TestimonialController {
                     $data['content_en'],
                     $data['content_ar'] ?? null,
                     $data['rating'] ?? 5,
+                    $data['service_type'] ?? null,
+                    $data['service_id'] ?? null,
+                    isset($data['is_featured']) ? (int) !!$data['is_featured'] : 0,
+                    isset($data['is_approved']) ? (int) !!$data['is_approved'] : 1,
+                    isset($data['is_visible']) ? (int) !!$data['is_visible'] : 1,
                     $data['order_index'] ?? 0,
                 ]
             );
@@ -64,7 +78,7 @@ class TestimonialController {
             $current = fetchOne("SELECT image_url FROM testimonials WHERE id = ?", [$data['id']]);
             $fields = [];
             $params = [];
-            $allowedFields = ['name', 'location', 'image_url', 'video_url', 'content_en', 'content_ar', 'rating', 'order_index'];
+            $allowedFields = ['name', 'location', 'image_url', 'video_url', 'content_en', 'content_ar', 'rating', 'service_type', 'service_id', 'is_featured', 'is_approved', 'is_visible', 'order_index'];
 
             foreach ($allowedFields as $field) {
                 if (array_key_exists($field, $data)) {

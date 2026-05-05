@@ -1,5 +1,5 @@
 import { Copy, Trash2 } from 'lucide-react'
-import { ActionButton, FilePicker, SectionCard } from './shared/AdminUI'
+import { ActionButton, FilePicker, MediaPreview, SectionCard } from './shared/AdminUI'
 
 export default function MediaLibraryModule({ media, uploadFile, setUploadFile, onUpload, onDelete, saving }) {
   return (
@@ -16,7 +16,7 @@ export default function MediaLibraryModule({ media, uploadFile, setUploadFile, o
           label="Choose file"
           preview=""
           onChange={setUploadFile}
-          buttonLabel={uploadFile?.name || 'Choose a new image'}
+          buttonLabel={uploadFile?.name || 'Choose a new image or video'}
         />
       </SectionCard>
 
@@ -24,7 +24,7 @@ export default function MediaLibraryModule({ media, uploadFile, setUploadFile, o
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {media.map((item) => (
             <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
-              <img src={item.filepath} alt={item.filename} className="mb-3 h-44 w-full rounded-xl object-cover" />
+              <MediaPreview src={item.filepath} alt={item.filename} className="mb-3 h-44 w-full" />
               <div className="truncate text-sm text-white">{item.filename}</div>
               <div className="mt-1 text-xs text-slate-500">{item.created_at}</div>
               <div className="mt-3 flex gap-2">

@@ -68,14 +68,35 @@ class SettingsController {
         modify("DELETE FROM media WHERE filepath = ?", [$relativePath]);
     }
 
-    private function storeUploadedFile(array $file, string $directory, string $prefix = 'media_') {
-        $allowedTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
-        if (!in_array($file['type'], $allowedTypes, true)) {
-            throw new Exception('Invalid file type. Allowed: JPEG, PNG, WebP, GIF');
+    private function storeUploadedFile(array $file, string $directory, string $prefix = 'media_', bool $allowVideos = false) {
+        $allowedTypes = [
+            'image/jpeg' => 'jpg',
+            'image/png' => 'png',
+            'image/webp' => 'webp',
+            'image/gif' => 'gif',
+        ];
+
+        if ($allowVideos) {
+            $allowedTypes += [
+                'video/mp4' => 'mp4',
+                'video/webm' => 'webm',
+                'video/quicktime' => 'mov',
+            ];
         }
 
-        if ($file['size'] > 10 * 1024 * 1024) {
-            throw new Exception('File too large. Maximum size: 10MB');
+        if (($file['error'] ?? UPLOAD_ERR_OK) !== UPLOAD_ERR_OK) {
+            throw new Exception('Upload failed');
+        }
+
+        $maxSize = $allowVideos ? 100 * 1024 * 1024 : 10 * 1024 * 1024;
+        if (($file['size'] ?? 0) > $maxSize) {
+            throw new Exception('File too large. Maximum size: ' . ($allowVideos ? '100MB' : '10MB'));
+        }
+
+        $finfo = new finfo(FILEINFO_MIME_TYPE);
+        $mimeType = $finfo->file($file['tmp_name']);
+        if (!isset($allowedTypes[$mimeType])) {
+            throw new Exception($allowVideos ? 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF, MP4, WebM, MOV' : 'Invalid file type. Allowed: JPEG, PNG, WebP, GIF');
         }
 
         $uploadDir = __DIR__ . '/../../uploads/' . trim($directory, '/') . '/';
@@ -83,7 +104,7 @@ class SettingsController {
             mkdir($uploadDir, 0755, true);
         }
 
-        $extension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $extension = $allowedTypes[$mimeType];
         $filename = $prefix . time() . '_' . uniqid() . '.' . $extension;
         $filepath = $uploadDir . $filename;
 
@@ -94,7 +115,7 @@ class SettingsController {
         $relativePath = '/uploads/' . trim($directory, '/') . '/' . $filename;
         insert(
             "INSERT INTO media (filename, filepath, mimetype, size_bytes) VALUES (?, ?, ?, ?)",
-            [$file['name'], $relativePath, $file['type'], $file['size']]
+            [$file['name'], $relativePath, $mimeType, $file['size']]
         );
 
         return $relativePath;
@@ -281,6 +302,13 @@ class SettingsController {
     public function updateCoachProfile($data) {
         try {
             $currentProfile = fetchOne("SELECT * FROM coach_profile LIMIT 1");
+            if (!$currentProfile) {
+                insert(
+                    "INSERT INTO coach_profile (name_en, name_ar, title_en, title_ar, bio_en, bio_ar, experience_years, students_count, profit_shared)
+                     VALUES ('', '', '', '', '', '', 0, 0, '')"
+                );
+                $currentProfile = fetchOne("SELECT * FROM coach_profile LIMIT 1");
+            }
             $fields = [];
             $values = [];
             
@@ -308,7 +336,8 @@ class SettingsController {
             
             $values[] = date('Y-m-d H:i:s'); // updated_at
             
-            $sql = "UPDATE coach_profile SET " . implode(', ', $fields) . ", updated_at = ? LIMIT 1";
+            $values[] = (int) $currentProfile['id'];
+            $sql = "UPDATE coach_profile SET " . implode(', ', $fields) . ", updated_at = ? WHERE id = ?";
             modify($sql, $values);
             
             return json_encode([
@@ -338,15 +367,22 @@ class SettingsController {
             }
             
             $file = $_FILES['image'];
-            $currentProfile = fetchOne("SELECT image_url FROM coach_profile LIMIT 1");
+            $currentProfile = fetchOne("SELECT id, image_url FROM coach_profile LIMIT 1");
+            if (!$currentProfile) {
+                insert(
+                    "INSERT INTO coach_profile (name_en, name_ar, title_en, title_ar, bio_en, bio_ar, experience_years, students_count, profit_shared)
+                     VALUES ('', '', '', '', '', '', 0, 0, '')"
+                );
+                $currentProfile = fetchOne("SELECT id, image_url FROM coach_profile LIMIT 1");
+            }
             $relativePath = $this->storeUploadedFile($file, 'coach', 'coach_');
             if (!empty($currentProfile['image_url']) && $currentProfile['image_url'] !== $relativePath) {
                 $this->deleteManagedFile($currentProfile['image_url']);
             }
 
             modify(
-                "UPDATE coach_profile SET image_url = ? WHERE id = 1",
-                [$relativePath]
+                "UPDATE coach_profile SET image_url = ? WHERE id = ?",
+                [$relativePath, (int) ($currentProfile['id'] ?? 1)]
             );
 
             return json_encode([
@@ -377,8 +413,8 @@ class SettingsController {
             }
             
             $file = $_FILES['file'];
-            $relativePath = $this->storeUploadedFile($file, 'media', 'media_');
-            $media = fetchOne("SELECT id, filename, filepath FROM media WHERE filepath = ?", [$relativePath]);
+            $relativePath = $this->storeUploadedFile($file, 'media', 'media_', true);
+            $media = fetchOne("SELECT id, filename, filepath, mimetype FROM media WHERE filepath = ?", [$relativePath]);
 
             return json_encode([
                 'success' => true,
@@ -387,6 +423,7 @@ class SettingsController {
                     'id' => $media['id'] ?? null,
                     'filename' => $media['filename'] ?? $file['name'],
                     'filepath' => $relativePath,
+                    'mimetype' => $media['mimetype'] ?? null,
                     'url' => $relativePath
                 ]
             ]);

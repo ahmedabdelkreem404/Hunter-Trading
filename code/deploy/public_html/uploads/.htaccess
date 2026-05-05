@@ -1,11 +1,16 @@
-# Allow access to uploaded files
-<FilesMatch "\.(?i:jpg|jpeg|png|gif|webp|pdf)$">
+﻿# Allow access to uploaded files
+<FilesMatch "\.(?i:jpg|jpeg|png|gif|webp|mp4|webm|mov)$">
     Order Allow,Deny
     Allow from all
 </FilesMatch>
 
 # Prevent direct PHP execution
-<FilesMatch "\.php$">
+<IfModule mod_php.c>
+php_flag engine off
+</IfModule>
+RemoveHandler .php .phtml .php3 .php4 .php5 .php7 .php8
+
+<FilesMatch "\.(?i:php|phtml|php3|php4|php5|php7|php8)$">
     Order Deny,Allow
     Deny from all
 </FilesMatch>

@@ -61,15 +61,33 @@ export function Toggle({ label, checked, onChange }) {
   )
 }
 
-export function FilePicker({ label, onChange, preview, buttonLabel = 'Choose image' }) {
+function isVideoUrl(url = '') {
+  return /\.(mp4|webm|mov)(\?|#|$)/i.test(url)
+}
+
+function isVideoMime(mimetype = '') {
+  return String(mimetype).startsWith('video/')
+}
+
+export function MediaPreview({ src, alt, className = 'h-24 w-24' }) {
+  if (!src) return null
+
+  if (isVideoUrl(src)) {
+    return (
+      <video src={src} className={`${className} rounded-xl border border-gray-700 object-cover`} muted playsInline preload="metadata" />
+    )
+  }
+
+  return <img src={src} alt={alt} className={`${className} rounded-xl border border-gray-700 object-cover`} />
+}
+
+export function FilePicker({ label, onChange, preview, buttonLabel = 'Choose media', accept = 'image/*,video/mp4,video/webm,video/quicktime' }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-slate-300">{label}</span>
       <div className="rounded-xl border border-dashed border-gray-700 bg-slate-800 p-4">
-        {preview ? (
-          <img src={preview} alt={label} className="mb-3 h-28 w-28 rounded-xl border border-gray-700 object-cover" />
-        ) : null}
-        <input type="file" accept="image/*" onChange={(event) => onChange(event.target.files?.[0] ?? null)} className="block w-full text-sm text-slate-300" />
+        {preview ? <MediaPreview src={preview} alt={label} className="mb-3 h-28 w-28" /> : null}
+        <input type="file" accept={accept} onChange={(event) => onChange(event.target.files?.[0] ?? null)} className="block w-full text-sm text-slate-300" />
         <div className="mt-2 text-xs text-slate-500">{buttonLabel}</div>
       </div>
     </label>
@@ -81,9 +99,7 @@ export function MediaPicker({ label, media = [], onSelect, selectedUrl = '' }) {
     <div className="block">
       <span className="mb-2 block text-sm font-medium text-slate-300">{label}</span>
       <div className="rounded-xl border border-gray-700 bg-slate-800 p-3">
-        {selectedUrl ? (
-          <img src={selectedUrl} alt={label} className="mb-3 h-24 w-24 rounded-xl border border-gray-700 object-cover" />
-        ) : null}
+        {selectedUrl ? <MediaPreview src={selectedUrl} alt={label} className="mb-3 h-24 w-24" /> : null}
         <div className="grid max-h-56 gap-3 overflow-y-auto sm:grid-cols-2 xl:grid-cols-3">
           {media.map((item) => (
             <button
@@ -94,7 +110,11 @@ export function MediaPicker({ label, media = [], onSelect, selectedUrl = '' }) {
                 selectedUrl === item.filepath ? 'border-hunter-green bg-hunter-green/10' : 'border-white/10 bg-slate-900/70 hover:border-white/20'
               }`}
             >
-              <img src={item.filepath} alt={item.filename} className="h-20 w-full object-cover" />
+              {isVideoMime(item.mimetype) || isVideoUrl(item.filepath) ? (
+                <video src={item.filepath} className="h-20 w-full object-cover" muted playsInline preload="metadata" />
+              ) : (
+                <img src={item.filepath} alt={item.filename} className="h-20 w-full object-cover" />
+              )}
               <div className="truncate px-3 py-2 text-xs text-slate-300">{item.filename}</div>
             </button>
           ))}

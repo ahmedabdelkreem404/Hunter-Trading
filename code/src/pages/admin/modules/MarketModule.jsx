@@ -32,7 +32,7 @@ export default function MarketModule({
           <Field label="Author" value={draft.author_name} onChange={(event) => setDraft((current) => ({ ...current, author_name: event.target.value }))} />
           <Field label="Publish date" type="datetime-local" value={draft.published_at} onChange={(event) => setDraft((current) => ({ ...current, published_at: event.target.value }))} />
           <Field label="Sort order" type="number" value={draft.sort_order} onChange={(event) => setDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
-          <FilePicker label="Image upload" preview={draft.image_url} onChange={setDraftImageFile} buttonLabel={draftImageFile?.name || 'Upload image'} />
+          <FilePicker label="Image upload" preview={draft.image_url} onChange={setDraftImageFile} buttonLabel={draftImageFile?.name || 'Upload image'} accept="image/*" />
           <MediaPicker label="Select image from library" media={media} selectedUrl={draft.image_url} onSelect={(item) => setDraft((current) => ({ ...current, image_url: item.filepath }))} />
           <TextArea label="Summary EN" className="md:col-span-2 xl:col-span-3" value={draft.summary_en} onChange={(event) => setDraft((current) => ({ ...current, summary_en: event.target.value }))} />
           <TextArea label="Summary AR" className="md:col-span-2 xl:col-span-3" value={draft.summary_ar} onChange={(event) => setDraft((current) => ({ ...current, summary_ar: event.target.value }))} />
@@ -57,7 +57,7 @@ export default function MarketModule({
                 <Field label="Author" value={update.author_name || ''} onChange={(event) => setUpdates((current) => current.map((item) => (item.id === update.id ? { ...item, author_name: event.target.value } : item)))} />
                 <Field label="Publish date" type="datetime-local" value={update.published_at || ''} onChange={(event) => setUpdates((current) => current.map((item) => (item.id === update.id ? { ...item, published_at: event.target.value } : item)))} />
                 <Field label="Sort order" type="number" value={update.sort_order || 0} onChange={(event) => setUpdates((current) => current.map((item) => (item.id === update.id ? { ...item, sort_order: Number(event.target.value) } : item)))} />
-                <FilePicker label="Image upload" preview={update.image_url || ''} onChange={(file) => onUploadImage(update, file)} buttonLabel="Upload image" />
+                <FilePicker label="Image upload" preview={update.image_url || ''} onChange={(file) => onUploadImage(update, file)} buttonLabel="Upload image" accept="image/*" />
                 <MediaPicker label="Select image from library" media={media} selectedUrl={update.image_url || ''} onSelect={(item) => setUpdates((current) => current.map((entry) => (entry.id === update.id ? { ...entry, image_url: item.filepath } : entry)))} />
                 <TextArea label="Summary EN" className="md:col-span-2 xl:col-span-3" value={update.summary_en || ''} onChange={(event) => setUpdates((current) => current.map((item) => (item.id === update.id ? { ...item, summary_en: event.target.value } : item)))} />
                 <TextArea label="Summary AR" className="md:col-span-2 xl:col-span-3" value={update.summary_ar || ''} onChange={(event) => setUpdates((current) => current.map((item) => (item.id === update.id ? { ...item, summary_ar: event.target.value } : item)))} />

@@ -3,7 +3,7 @@ import { AlertTriangle, Mail, MapPin } from 'lucide-react'
 import { settingsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 
-const LIVE_REFRESH_INTERVAL = 10000
+const LIVE_REFRESH_INTERVAL = 0
 
 const socialIcons = {
   Telegram: (

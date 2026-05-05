@@ -26,6 +26,22 @@ function requireAdminAuth(): void
     }
 }
 
+function requireAdminCsrf(): void
+{
+    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+        return;
+    }
+
+    require_once __DIR__ . '/controllers/AuthController.php';
+    $auth = new AuthController();
+    $token = $_SERVER['HTTP_X_CSRF_TOKEN'] ?? '';
+    if (!$auth->validateCsrfToken($token)) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Invalid CSRF token']);
+        exit;
+    }
+}
+
 function endpointNotFound(): void
 {
     http_response_code(404);
@@ -124,12 +140,20 @@ try {
         return;
     }
 
+    if ($path === 'auth/csrf') {
+        require_once __DIR__ . '/controllers/AuthController.php';
+        $controller = new AuthController();
+        echo $controller->csrf();
+        return;
+    }
+
     if (!str_starts_with($path, 'admin/')) {
         endpointNotFound();
         return;
     }
 
     requireAdminAuth();
+    requireAdminCsrf();
     $adminPath = substr($path, 6);
 
     switch ($adminPath) {

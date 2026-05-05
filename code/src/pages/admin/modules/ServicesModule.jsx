@@ -22,6 +22,22 @@ function newMedia() {
   return { media_url: '', media_type: 'image', alt_text_en: '', alt_text_ar: '' }
 }
 
+function newImportantLink() {
+  return { label_en: '', label_ar: '', url: '', new_tab: true, sort_order: 1 }
+}
+
+function mediaTypeFromItem(item = {}) {
+  const mimetype = String(item.mimetype || '')
+  if (mimetype.startsWith('video/')) return 'video'
+  if (/\.(mp4|webm|mov)(\?|#|$)/i.test(item.filepath || '')) return 'video'
+  return 'image'
+}
+
+function asBool(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  return value === true || value === 1 || value === '1'
+}
+
 function RelationEditor({ title, items, onChange, factory, renderRow }) {
   return (
     <div className="space-y-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
@@ -55,7 +71,102 @@ function RelationEditor({ title, items, onChange, factory, renderRow }) {
 }
 
 function updateListItem(list, index, changes) {
-  return (list || []).map((item, currentIndex) => (currentIndex === index ? { ...item, ...changes } : item))
+  const next = Array.isArray(list) ? [...list] : []
+  while (next.length <= index) {
+    next.push({})
+  }
+  next[index] = { ...next[index], ...changes }
+  return next
+}
+
+function ServiceAdvancedControls({ service, onChange, media = [] }) {
+  return (
+    <div className="mt-6 space-y-4">
+      <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+        <h3 className="mb-4 text-sm font-semibold text-white">Card and details media</h3>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Select label="Card media type" value={service.card_media_type || 'image'} onChange={(event) => onChange({ card_media_type: event.target.value })}>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="embed">Embed URL</option>
+          </Select>
+          <Field label="Card media URL" value={service.card_media_url || ''} onChange={(event) => onChange({ card_media_url: event.target.value })} />
+          <Field label="Card video poster URL" value={service.card_video_poster_url || ''} onChange={(event) => onChange({ card_video_poster_url: event.target.value })} />
+          <MediaPicker
+            label="Pick card media"
+            media={media}
+            selectedUrl={service.card_media_url || ''}
+            onSelect={(item) => onChange({ card_media_url: item.filepath, card_media_type: mediaTypeFromItem(item) })}
+          />
+          <MediaPicker
+            label="Pick card poster"
+            media={media}
+            selectedUrl={service.card_video_poster_url || ''}
+            onSelect={(item) => onChange({ card_video_poster_url: item.filepath })}
+          />
+          <Select label="Details hero media type" value={service.cover_media_type || 'image'} onChange={(event) => onChange({ cover_media_type: event.target.value })}>
+            <option value="image">Image</option>
+            <option value="video">Video</option>
+            <option value="embed">Embed URL</option>
+          </Select>
+          <Field label="Details hero URL" value={service.cover_url || ''} onChange={(event) => onChange({ cover_url: event.target.value })} />
+          <Field label="Details video poster URL" value={service.cover_video_poster_url || ''} onChange={(event) => onChange({ cover_video_poster_url: event.target.value })} />
+          <MediaPicker
+            label="Pick details hero media"
+            media={media}
+            selectedUrl={service.cover_url || ''}
+            onSelect={(item) => onChange({ cover_url: item.filepath, cover_media_type: mediaTypeFromItem(item) })}
+          />
+          <Toggle label="Card video autoplay" checked={asBool(service.card_video_autoplay, false)} onChange={(value) => onChange({ card_video_autoplay: value })} />
+          <Toggle label="Card video muted" checked={asBool(service.card_video_muted, true)} onChange={(value) => onChange({ card_video_muted: value })} />
+          <Toggle label="Card video loop" checked={asBool(service.card_video_loop, true)} onChange={(value) => onChange({ card_video_loop: value })} />
+        </div>
+      </div>
+
+      <div className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+        <h3 className="mb-4 text-sm font-semibold text-white">CTA behavior, terms, and referral</h3>
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          <Select label="CTA action" value={service.cta_action || 'checkout'} onChange={(event) => onChange({ cta_action: event.target.value })}>
+            <option value="checkout">Checkout</option>
+            <option value="details">Details page</option>
+            <option value="external">External URL</option>
+            <option value="referral">Referral URL</option>
+            <option value="whatsapp">WhatsApp</option>
+            <option value="telegram">Telegram</option>
+          </Select>
+          <Field label="Referral URL" value={service.referral_url || ''} onChange={(event) => onChange({ referral_url: event.target.value })} />
+          <Field label="Broker name" value={service.broker_name || ''} onChange={(event) => onChange({ broker_name: event.target.value })} />
+          <Field label="Broker URL" value={service.broker_url || ''} onChange={(event) => onChange({ broker_url: event.target.value })} />
+          <Field label="Info button label EN" value={service.details_button_label_en || ''} onChange={(event) => onChange({ details_button_label_en: event.target.value })} />
+          <Field label="Info button label AR" value={service.details_button_label_ar || ''} onChange={(event) => onChange({ details_button_label_ar: event.target.value })} />
+          <Field label="Final CTA label EN" value={service.final_cta_label_en || ''} onChange={(event) => onChange({ final_cta_label_en: event.target.value })} />
+          <Field label="Final CTA label AR" value={service.final_cta_label_ar || ''} onChange={(event) => onChange({ final_cta_label_ar: event.target.value })} />
+          <Field label="Terms title EN" value={service.terms_title_en || ''} onChange={(event) => onChange({ terms_title_en: event.target.value })} />
+          <Field label="Terms title AR" value={service.terms_title_ar || ''} onChange={(event) => onChange({ terms_title_ar: event.target.value })} />
+          <TextArea label="Terms content EN" className="xl:col-span-3" value={service.terms_content_en || ''} onChange={(event) => onChange({ terms_content_en: event.target.value })} />
+          <TextArea label="Terms content AR" className="xl:col-span-3" value={service.terms_content_ar || ''} onChange={(event) => onChange({ terms_content_ar: event.target.value })} />
+          <TextArea label="Risk warning EN" className="xl:col-span-3" value={service.risk_warning_en || ''} onChange={(event) => onChange({ risk_warning_en: event.target.value })} />
+          <TextArea label="Risk warning AR" className="xl:col-span-3" value={service.risk_warning_ar || ''} onChange={(event) => onChange({ risk_warning_ar: event.target.value })} />
+        </div>
+      </div>
+
+      <RelationEditor
+        title="Important links"
+        items={service.important_links}
+        onChange={(items) => onChange({ important_links: items })}
+        factory={newImportantLink}
+        renderRow={(item, index) => (
+          <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+            <Field label="Label EN" value={item.label_en || ''} onChange={(event) => onChange({ important_links: updateListItem(service.important_links, index, { label_en: event.target.value }) })} />
+            <Field label="Label AR" value={item.label_ar || ''} onChange={(event) => onChange({ important_links: updateListItem(service.important_links, index, { label_ar: event.target.value }) })} />
+            <Field label="URL" className="xl:col-span-2" value={item.url || ''} onChange={(event) => onChange({ important_links: updateListItem(service.important_links, index, { url: event.target.value }) })} />
+            <Field label="Sort order" type="number" value={item.sort_order || 0} onChange={(event) => onChange({ important_links: updateListItem(service.important_links, index, { sort_order: Number(event.target.value) }) })} />
+            <Toggle label="Open in new tab" checked={item.new_tab !== false} onChange={(value) => onChange({ important_links: updateListItem(service.important_links, index, { new_tab: value }) })} />
+          </div>
+        )}
+      />
+    </div>
+  )
 }
 
 export default function ServicesModule({
@@ -114,8 +225,8 @@ export default function ServicesModule({
           <Field label="CTA link / redirect" className="md:col-span-2 xl:col-span-3" value={serviceDraft.cta_url} onChange={(event) => setServiceDraft((current) => ({ ...current, cta_url: event.target.value }))} />
           <Field label="Offer starts at" type="datetime-local" value={serviceDraft.offer_starts_at || ''} onChange={(event) => setServiceDraft((current) => ({ ...current, offer_starts_at: event.target.value }))} />
           <Field label="Offer ends at" type="datetime-local" value={serviceDraft.offer_ends_at || ''} onChange={(event) => setServiceDraft((current) => ({ ...current, offer_ends_at: event.target.value }))} />
-          <FilePicker label="Thumbnail upload" preview={serviceDraft.thumbnail_url} onChange={setServiceImageFile} buttonLabel={serviceImageFile?.name || 'Upload new image'} />
-          <MediaPicker label="Select thumbnail from library" media={media} selectedUrl={serviceDraft.thumbnail_url} onSelect={(item) => setServiceDraft((current) => ({ ...current, thumbnail_url: item.filepath, cover_url: item.filepath }))} />
+          <FilePicker label="Card media upload" preview={serviceDraft.card_media_url || serviceDraft.thumbnail_url} onChange={setServiceImageFile} buttonLabel={serviceImageFile?.name || 'Upload new image or video'} />
+          <MediaPicker label="Select card media from library" media={media} selectedUrl={serviceDraft.card_media_url || serviceDraft.thumbnail_url} onSelect={(item) => setServiceDraft((current) => ({ ...current, card_media_url: item.filepath, card_media_type: mediaTypeFromItem(item), ...(mediaTypeFromItem(item) === 'image' ? { thumbnail_url: item.filepath, cover_url: item.filepath } : {}) }))} />
           <TextArea label="Short description EN" className="md:col-span-2 xl:col-span-3" value={serviceDraft.short_description_en} onChange={(event) => setServiceDraft((current) => ({ ...current, short_description_en: event.target.value }))} />
           <TextArea label="Short description AR" className="md:col-span-2 xl:col-span-3" value={serviceDraft.short_description_ar} onChange={(event) => setServiceDraft((current) => ({ ...current, short_description_ar: event.target.value }))} />
           <TextArea label="Full description EN" className="md:col-span-2 xl:col-span-3" value={serviceDraft.full_description_en || ''} onChange={(event) => setServiceDraft((current) => ({ ...current, full_description_en: event.target.value }))} />
@@ -123,6 +234,12 @@ export default function ServicesModule({
           <Toggle label="Visible" checked={!!serviceDraft.is_visible} onChange={(value) => setServiceDraft((current) => ({ ...current, is_visible: value }))} />
           <Toggle label="Featured" checked={!!serviceDraft.is_featured} onChange={(value) => setServiceDraft((current) => ({ ...current, is_featured: value }))} />
         </div>
+
+        <ServiceAdvancedControls
+          service={serviceDraft}
+          media={media}
+          onChange={(changes) => setServiceDraft((current) => ({ ...current, ...changes }))}
+        />
 
         <div className="mt-6 grid gap-4 xl:grid-cols-2">
           <RelationEditor
@@ -179,10 +296,15 @@ export default function ServicesModule({
                   label="Pick existing media"
                   media={media}
                   selectedUrl={item.media_url || ''}
-                  onSelect={(selected) => setServiceDraft((current) => ({ ...current, media: updateListItem(current.media, index, { media_url: selected.filepath, media_type: 'image' }) }))}
+                  onSelect={(selected) => setServiceDraft((current) => ({ ...current, media: updateListItem(current.media, index, { media_url: selected.filepath, media_type: mediaTypeFromItem(selected) }) }))}
                 />
                 <Field label="Media URL" value={item.media_url || ''} onChange={(event) => setServiceDraft((current) => ({ ...current, media: updateListItem(current.media, index, { media_url: event.target.value }) }))} />
                 <div className="grid gap-4 md:grid-cols-2">
+                  <Select label="Media type" value={item.media_type || 'image'} onChange={(event) => setServiceDraft((current) => ({ ...current, media: updateListItem(current.media, index, { media_type: event.target.value }) }))}>
+                    <option value="image">Image</option>
+                    <option value="video">Video</option>
+                    <option value="embed">Embed</option>
+                  </Select>
                   <Field label="Alt text EN" value={item.alt_text_en || ''} onChange={(event) => setServiceDraft((current) => ({ ...current, media: updateListItem(current.media, index, { alt_text_en: event.target.value }) }))} />
                   <Field label="Alt text AR" value={item.alt_text_ar || ''} onChange={(event) => setServiceDraft((current) => ({ ...current, media: updateListItem(current.media, index, { alt_text_ar: event.target.value }) }))} />
                 </div>
@@ -221,8 +343,8 @@ export default function ServicesModule({
                 <Field label="CTA link / redirect" className="md:col-span-2 xl:col-span-3" value={service.cta_url || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, cta_url: event.target.value } : item)))} />
                 <Field label="Offer starts at" type="datetime-local" value={service.offer_starts_at || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, offer_starts_at: event.target.value } : item)))} />
                 <Field label="Offer ends at" type="datetime-local" value={service.offer_ends_at || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, offer_ends_at: event.target.value } : item)))} />
-                <FilePicker label="Thumbnail upload" preview={service.thumbnail_url || service.cover_url || ''} onChange={(file) => onUploadImage(service, file)} buttonLabel="Upload image" />
-                <MediaPicker label="Select thumbnail from library" media={media} selectedUrl={service.thumbnail_url || service.cover_url || ''} onSelect={(item) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, thumbnail_url: item.filepath, cover_url: item.filepath } : entry)))} />
+                <FilePicker label="Card media upload" preview={service.card_media_url || service.thumbnail_url || service.cover_url || ''} onChange={(file) => onUploadImage(service, file)} buttonLabel="Upload image or video" />
+                <MediaPicker label="Select card media from library" media={media} selectedUrl={service.card_media_url || service.thumbnail_url || service.cover_url || ''} onSelect={(item) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, card_media_url: item.filepath, card_media_type: mediaTypeFromItem(item), ...(mediaTypeFromItem(item) === 'image' ? { thumbnail_url: item.filepath, cover_url: item.filepath } : {}) } : entry)))} />
                 <TextArea label="Short description EN" className="md:col-span-2 xl:col-span-3" value={service.short_description_en || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, short_description_en: event.target.value } : item)))} />
                 <TextArea label="Short description AR" className="md:col-span-2 xl:col-span-3" value={service.short_description_ar || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, short_description_ar: event.target.value } : item)))} />
                 <TextArea label="Full description EN" className="md:col-span-2 xl:col-span-3" value={service.full_description_en || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, full_description_en: event.target.value } : item)))} />
@@ -230,6 +352,12 @@ export default function ServicesModule({
                 <Toggle label="Visible" checked={!!service.is_visible} onChange={(value) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, is_visible: value } : item)))} />
                 <Toggle label="Featured" checked={!!service.is_featured} onChange={(value) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, is_featured: value } : item)))} />
               </div>
+
+              <ServiceAdvancedControls
+                service={service}
+                media={media}
+                onChange={(changes) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, ...changes } : item)))}
+              />
 
               <div className="mt-6 grid gap-4 xl:grid-cols-2">
                 <RelationEditor
@@ -286,10 +414,15 @@ export default function ServicesModule({
                         label="Pick existing media"
                         media={media}
                         selectedUrl={item.media_url || ''}
-                        onSelect={(selected) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, media: updateListItem(entry.media, index, { media_url: selected.filepath, media_type: 'image' }) } : entry)))}
+                        onSelect={(selected) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, media: updateListItem(entry.media, index, { media_url: selected.filepath, media_type: mediaTypeFromItem(selected) }) } : entry)))}
                       />
                       <Field label="Media URL" value={item.media_url || ''} onChange={(event) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, media: updateListItem(entry.media, index, { media_url: event.target.value }) } : entry)))} />
                       <div className="grid gap-4 md:grid-cols-2">
+                        <Select label="Media type" value={item.media_type || 'image'} onChange={(event) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, media: updateListItem(entry.media, index, { media_type: event.target.value }) } : entry)))} >
+                          <option value="image">Image</option>
+                          <option value="video">Video</option>
+                          <option value="embed">Embed</option>
+                        </Select>
                         <Field label="Alt text EN" value={item.alt_text_en || ''} onChange={(event) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, media: updateListItem(entry.media, index, { alt_text_en: event.target.value }) } : entry)))} />
                         <Field label="Alt text AR" value={item.alt_text_ar || ''} onChange={(event) => setServices((current) => current.map((entry) => (entry.id === service.id ? { ...entry, media: updateListItem(entry.media, index, { alt_text_ar: event.target.value }) } : entry)))} />
                       </div>

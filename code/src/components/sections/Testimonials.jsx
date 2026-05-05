@@ -5,7 +5,7 @@ import { ChevronLeft, ChevronRight, Play, Send, Star } from 'lucide-react'
 import { sectionSettingsAPI, settingsAPI, testimonialsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 
-const LIVE_REFRESH_INTERVAL = 15000
+const LIVE_REFRESH_INTERVAL = 0
 
 function StarRating({ rating }) {
   return (
