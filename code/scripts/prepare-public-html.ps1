@@ -64,7 +64,7 @@ RewriteRule . index.php [QSA,L]
   @'
 # Hunter Trading Deployment
 
-This is a single-client trading services website. It is not a SaaS product or a multi-tenant platform.
+This is a single-client trading services website for one business. It is not a multi-client platform or a subscription product.
 
 Upload the contents of `public_html` to the hosting account's `public_html` directory.
 
