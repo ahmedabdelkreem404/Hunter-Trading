@@ -63,92 +63,84 @@ export default function Hero({ primaryCtaId = 'vip', scrollTargetId = 'funded' }
 
   return (
     <section id="home" className="relative flex min-h-[100svh] items-center overflow-hidden">
-      <div className="absolute inset-0 bg-gradient-to-br from-hunter-bg via-hunter-bg to-hunter-card" />
-      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_var(--tw-gradient-stops))] from-hunter-green/10 via-transparent to-transparent" />
+      <div className="absolute inset-0 z-0">
+        <HeroVideo settings={hero.settings || {}} title={title || t('hero.title')} background />
+      </div>
+      <div className="pointer-events-none absolute inset-0 z-[1] bg-black/65" />
+      <div className="pointer-events-none absolute inset-0 z-[2] bg-[radial-gradient(ellipse_at_top_right,_rgba(0,255,136,0.24),_transparent_42%),linear-gradient(90deg,_rgba(10,10,15,0.88)_0%,_rgba(10,10,15,0.66)_46%,_rgba(10,10,15,0.28)_100%)]" />
 
-      <div className="relative z-10 mx-auto max-w-7xl px-4 pb-10 pt-24 sm:px-6 sm:pt-28 lg:px-8">
-        <div className="grid items-center gap-10 lg:grid-cols-2 lg:gap-12">
-          <motion.div
-            initial={{ opacity: 0, x: -40 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.7 }}
-            className="text-center lg:text-left"
-          >
-            <div className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-hunter-green/20 bg-hunter-green/10 px-4 py-2">
-              <span className="h-2 w-2 rounded-full bg-hunter-green animate-pulse" />
-              <span className="text-sm font-medium text-hunter-green">
-                {primaryLabel || (isArabic ? 'ابدأ مع خدماتنا الآن' : 'Start with our trading services')}
-              </span>
-            </div>
+      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl items-center px-4 pb-20 pt-28 sm:px-6 sm:pt-32 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, x: isArabic ? 40 : -40 }}
+          animate={{ opacity: 1, x: 0 }}
+          transition={{ duration: 0.7 }}
+          className="mx-auto max-w-4xl text-center lg:mx-0 lg:text-start"
+        >
+          <div className="mb-6 inline-flex max-w-full items-center gap-2 rounded-full border border-hunter-green/30 bg-black/30 px-4 py-2 shadow-lg shadow-black/20 backdrop-blur">
+            <span className="h-2 w-2 rounded-full bg-hunter-green animate-pulse" />
+            <span className="text-sm font-medium text-hunter-green">
+              {primaryLabel || (isArabic ? 'ابدأ مع خدماتنا الآن' : 'Start with our trading services')}
+            </span>
+          </div>
 
-            <h1 className="mb-6 font-heading text-4xl font-bold leading-tight text-hunter-text sm:text-5xl lg:text-6xl xl:text-[4.25rem]">
-              {title || t('hero.title')}
-              <span className="mt-2 block text-gradient">
-                {subtitle || (isArabic ? 'إدارة كاملة لكل خدمات التداول' : 'Fully managed trading services')}
-              </span>
-            </h1>
+          <h1 className="mb-6 font-heading text-4xl font-bold leading-tight text-white drop-shadow-2xl sm:text-5xl lg:text-6xl xl:text-[4.5rem]">
+            {title || t('hero.title')}
+            <span className="mt-2 block text-gradient">
+              {subtitle || (isArabic ? 'إدارة كاملة لكل خدمات التداول' : 'Fully managed trading services')}
+            </span>
+          </h1>
 
-            <p className="mx-auto mb-8 max-w-2xl text-base leading-8 text-hunter-text-muted sm:text-lg lg:mx-0 lg:text-xl">
-              {body || t('hero.subtitle')}
-            </p>
+          <p className="mx-auto mb-8 max-w-2xl text-base leading-8 text-white/85 drop-shadow-lg sm:text-lg lg:mx-0 lg:text-xl">
+            {body || t('hero.subtitle')}
+          </p>
 
-            <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={handlePrimaryClick}
-                className="btn-primary flex w-full items-center justify-center gap-2 text-base sm:w-auto sm:text-lg"
+          <div className="mb-10 flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:justify-center lg:justify-start">
+            <motion.button
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={handlePrimaryClick}
+              className="btn-primary flex w-full items-center justify-center gap-2 text-base shadow-2xl shadow-black/30 sm:w-auto sm:text-lg"
+            >
+              <TelegramIcon />
+              {primaryLabel || t('hero.cta_telegram')}
+            </motion.button>
+
+            <motion.a
+              href={secondaryUrl}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
+              className="btn-secondary flex w-full items-center justify-center gap-2 border-white/25 bg-black/30 text-base text-white shadow-2xl shadow-black/20 backdrop-blur hover:bg-black/45 sm:w-auto sm:text-lg"
+            >
+              {secondaryLabel || (isArabic ? 'اعرض الخدمات' : 'View Services')}
+            </motion.a>
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={`${stat.value}-${index}`}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.35 + index * 0.1 }}
+                className="rounded-2xl border border-white/10 bg-black/25 px-4 py-3 text-center shadow-lg shadow-black/10 backdrop-blur lg:text-start"
               >
-                <TelegramIcon />
-                {primaryLabel || t('hero.cta_telegram')}
-              </motion.button>
-
-              <motion.a
-                href={secondaryUrl}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="btn-secondary flex w-full items-center justify-center gap-2 text-base sm:w-auto sm:text-lg"
-              >
-                {secondaryLabel || (isArabic ? 'اعرض الخدمات' : 'View Services')}
-              </motion.a>
-            </div>
-
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              {stats.map((stat, index) => (
-                <motion.div
-                  key={`${stat.value}-${index}`}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.35 + index * 0.1 }}
-                  className="text-center lg:text-left"
-                >
-                  <div className="font-heading text-2xl font-bold text-hunter-green sm:text-3xl">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-hunter-text-muted">
-                    {isArabic ? stat.label_ar || stat.label_en : stat.label_en || stat.label_ar}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.9 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ duration: 0.7, delay: 0.15 }}
-            className="relative order-first h-[320px] sm:h-[440px] lg:order-none lg:h-[600px]"
-          >
-            <HeroVideo settings={hero.settings || {}} title={title || t('hero.title')} />
-          </motion.div>
-        </div>
+                <div className="font-heading text-2xl font-bold text-hunter-green sm:text-3xl">
+                  {stat.value}
+                </div>
+                <div className="text-sm text-white/75">
+                  {isArabic ? stat.label_ar || stat.label_en : stat.label_en || stat.label_ar}
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </motion.div>
       </div>
 
       <motion.div
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 1.3 }}
-        className="absolute bottom-8 left-1/2 -translate-x-1/2"
+        className="absolute bottom-8 left-1/2 z-20 -translate-x-1/2"
       >
         <motion.div
           animate={{ y: [0, 10, 0] }}
@@ -156,7 +148,7 @@ export default function Hero({ primaryCtaId = 'vip', scrollTargetId = 'funded' }
           className="flex cursor-pointer flex-col items-center gap-2"
           onClick={() => document.getElementById(scrollTargetId)?.scrollIntoView({ behavior: 'smooth' })}
         >
-          <span className="text-sm text-hunter-text-muted">{isArabic ? 'مرر للأسفل' : 'Scroll'}</span>
+          <span className="text-sm text-white/70">{isArabic ? 'مرر للأسفل' : 'Scroll'}</span>
           <ChevronDown className="h-5 w-5 text-hunter-green" />
         </motion.div>
       </motion.div>
