@@ -81,7 +81,7 @@ export function MediaPreview({ src, alt, className = 'h-24 w-24' }) {
   return <img src={src} alt={alt} className={`${className} rounded-xl border border-gray-700 object-cover`} />
 }
 
-export function FilePicker({ label, onChange, preview, buttonLabel = 'Choose media', accept = 'image/*,video/mp4,video/webm,video/quicktime' }) {
+export function FilePicker({ label, onChange, preview, buttonLabel = 'اختيار ملف', accept = 'image/*,video/mp4,video/webm,video/quicktime' }) {
   return (
     <label className="block">
       <span className="mb-2 block text-sm font-medium text-slate-300">{label}</span>

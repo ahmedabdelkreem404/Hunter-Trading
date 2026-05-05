@@ -39,7 +39,7 @@ const emptyService = {
   price: 0,
   compare_price: '',
   currency: 'USD',
-  cta_label_en: 'Buy Now',
+  cta_label_en: '',
   cta_label_ar: 'اشتر الآن',
   cta_url: '',
   cta_action: 'checkout',
@@ -67,9 +67,9 @@ const emptyService = {
   risk_warning_en: '',
   risk_warning_ar: '',
   important_links: [{ label_en: '', label_ar: '', url: '', new_tab: true, sort_order: 1 }],
-  details_button_label_en: 'Details',
+  details_button_label_en: '',
   details_button_label_ar: 'التفاصيل',
-  final_cta_label_en: 'Continue',
+  final_cta_label_en: '',
   final_cta_label_ar: 'متابعة',
   sort_order: 0,
   is_visible: true,
@@ -113,14 +113,6 @@ const emptyMarketUpdate = {
   is_featured: false,
 }
 
-const emptyCoachSocial = {
-  platform: 'telegram',
-  label: '',
-  url: '',
-  sort_order: 0,
-  is_enabled: true,
-}
-
 const defaultCoach = {
   name_en: '',
   name_ar: '',
@@ -140,12 +132,26 @@ const defaultSettings = {
   telegram_url: '',
   whatsapp_url: '',
   instapay_number: '',
+  instapay_account_name: '',
   vodafone_cash_number: '',
+  vodafone_cash_account_name: '',
+  bank_transfer_details: '',
+  payment_instructions_ar: '',
+  payment_instructions_en: '',
   instagram_url: '',
   youtube_url: '',
   facebook_url: '',
   twitter_url: '',
   tiktok_url: '',
+  linkedin_url: '',
+  telegram_enabled: '',
+  whatsapp_enabled: '',
+  instagram_enabled: '',
+  youtube_enabled: '',
+  tiktok_enabled: '',
+  facebook_enabled: '',
+  twitter_enabled: '',
+  linkedin_enabled: '',
   location: '',
   footer_description: '',
   privacy_policy_title: '',
@@ -164,16 +170,16 @@ const defaultSettings = {
 }
 
 const tabs = [
-  { id: 'overview', label: 'Dashboard Overview', icon: LayoutDashboard, description: 'KPIs, latest leads, and latest payment orders.' },
-  { id: 'website', label: 'Website Content', icon: Package, description: 'Hero content, homepage sections, navbar, and footer.' },
-  { id: 'services', label: 'Services & Products', icon: Package, description: 'Funded, VIP, Scalp, Courses, and Offers in one source.' },
-  { id: 'orders', label: 'Payment Orders', icon: CreditCard, description: 'Manual payment verification and routing.' },
-  { id: 'testimonials', label: 'Testimonials', icon: MessageSquareQuote, description: 'Moderation, ordering, visibility, and relation to services.' },
-  { id: 'market', label: 'Market Follow-up', icon: TrendingUp, description: 'Managed market updates with ordering, visibility, and pinning.' },
-  { id: 'media', label: 'Media Library', icon: Image, description: 'Reusable uploaded media across the platform.' },
-  { id: 'coach', label: 'Coach & Social', icon: UserSquare2, description: 'Coach profile and coach social links.' },
-  { id: 'settings', label: 'Settings', icon: Settings, description: 'Branding, contact, payment numbers, and legal content.' },
-  { id: 'leads', label: 'Leads / Customers', icon: Users, description: 'Lead list collected from the website.' },
+  { id: 'overview', label: 'الرئيسية', icon: LayoutDashboard, description: 'ملخص سريع للطلبات والعملاء والخدمات.' },
+  { id: 'website', label: 'محتوى الموقع', icon: Package, description: 'الهيرو، سكشنات الصفحة الرئيسية، النافبار والفوتر.' },
+  { id: 'services', label: 'الخدمات والمنتجات', icon: Package, description: 'الحسابات الممولة، VIP، السكالب، الكورسات والعروض.' },
+  { id: 'orders', label: 'طلبات الدفع', icon: CreditCard, description: 'مراجعة المدفوعات وتحويل العميل بعد الموافقة.' },
+  { id: 'testimonials', label: 'آراء العملاء', icon: MessageSquareQuote, description: 'إضافة وتعديل آراء العملاء المرتبطة بالخدمات.' },
+  { id: 'market', label: 'متابعة السوق', icon: TrendingUp, description: 'تحديثات وتحليلات السوق الظاهرة في الموقع.' },
+  { id: 'media', label: 'مكتبة الوسائط', icon: Image, description: 'رفع الصور والفيديوهات واستخدامها في أي سكشن.' },
+  { id: 'coach', label: 'المدرب والسوشيال', icon: UserSquare2, description: 'بيانات المدرب وصورته وروابط السوشيال الموحدة.' },
+  { id: 'settings', label: 'إعدادات الموقع', icon: Settings, description: 'اللوجو، الألوان، التواصل، الدفع، القانوني والفوتر.' },
+  { id: 'leads', label: 'العملاء المحتملون', icon: Users, description: 'كل بيانات العملاء المرسلة من الموقع.' },
 ]
 
 function toDateTimeLocal(value) {
@@ -209,8 +215,6 @@ export default function AdminApp() {
   const [marketUpdates, setMarketUpdates] = useState([])
   const [coach, setCoach] = useState(defaultCoach)
   const [coachImageFile, setCoachImageFile] = useState(null)
-  const [coachSocialLinks, setCoachSocialLinks] = useState([])
-  const [coachSocialDraft, setCoachSocialDraft] = useState(emptyCoachSocial)
   const [siteSettings, setSiteSettings] = useState(defaultSettings)
   const [siteLogoFile, setSiteLogoFile] = useState(null)
   const [media, setMedia] = useState([])
@@ -270,11 +274,6 @@ export default function AdminApp() {
     setMarketUpdates((response.data ?? []).map((item) => ({ ...item, published_at: toDateTimeLocal(item.published_at) })))
   }
 
-  const refreshCoachSocialLinks = async () => {
-    const response = await adminAPI.getCoachSocialLinks()
-    setCoachSocialLinks(response.data ?? [])
-  }
-
   const refreshMedia = async () => {
     const response = await adminAPI.getMedia()
     setMedia(response.data ?? [])
@@ -298,7 +297,6 @@ export default function AdminApp() {
       testimonialsRes,
       marketRes,
       coachRes,
-      coachSocialRes,
       settingsRes,
       mediaRes,
       leadsRes,
@@ -310,7 +308,6 @@ export default function AdminApp() {
       adminAPI.getTestimonials(),
       adminAPI.getMarketUpdates(),
       adminAPI.getCoach(),
-      adminAPI.getCoachSocialLinks(),
       adminAPI.getSettings(),
       adminAPI.getMedia(),
       adminAPI.getLeads(),
@@ -327,7 +324,6 @@ export default function AdminApp() {
     setTestimonials(testimonialsRes.data ?? [])
     setMarketUpdates((marketRes.data ?? []).map((item) => ({ ...item, published_at: toDateTimeLocal(item.published_at) })))
     setCoach({ ...defaultCoach, ...(coachRes.data ?? {}) })
-    setCoachSocialLinks(coachSocialRes.data ?? [])
     setSiteSettings(mapSettings(settingsRes))
     setMedia(mediaRes.data ?? [])
     setLeads(leadsRes.data?.leads ?? [])
@@ -335,7 +331,7 @@ export default function AdminApp() {
 
   useEffect(() => {
     loadData()
-      .catch((error) => handleError(error, 'Failed to load dashboard'))
+      .catch((error) => handleError(error, 'تعذر تحميل لوحة التحكم'))
       .finally(() => setBooting(false))
   }, [])
 
@@ -343,9 +339,9 @@ export default function AdminApp() {
     setSaving('sections-save')
     try {
       await adminAPI.updateSectionSettings(sections)
-      setFlash('Website content saved')
+      setFlash('تم حفظ محتوى الموقع')
     } catch (error) {
-      handleError(error, 'Failed to save website content')
+      handleError(error, 'تعذر حفظ محتوى الموقع')
     } finally {
       setSaving('')
     }
@@ -362,9 +358,9 @@ export default function AdminApp() {
         setSiteSettings(nextSettings)
       }
       await adminAPI.updateSettings(nextSettings)
-      setFlash('Settings saved')
+      setFlash('تم حفظ الإعدادات')
     } catch (error) {
-      handleError(error, 'Failed to save settings')
+      handleError(error, 'تعذر حفظ الإعدادات')
     } finally {
       setSaving('')
     }
@@ -396,9 +392,9 @@ export default function AdminApp() {
       setServiceImageFile(null)
       await refreshServices()
       await refreshMedia()
-      setFlash('Service created')
+      setFlash('تم إنشاء الخدمة')
     } catch (error) {
-      handleError(error, 'Failed to create service')
+      handleError(error, 'تعذر إنشاء الخدمة')
     } finally {
       setSaving('')
     }
@@ -413,16 +409,16 @@ export default function AdminApp() {
         offer_ends_at: fromDateTimeLocal(service.offer_ends_at),
       })
       await refreshServices()
-      setFlash('Service saved')
+      setFlash('تم حفظ الخدمة')
     } catch (error) {
-      handleError(error, 'Failed to save service')
+      handleError(error, 'تعذر حفظ الخدمة')
     } finally {
       setSaving('')
     }
   }
 
   const deleteService = async (id) => {
-    if (!window.confirm('Delete this service?')) {
+    if (!window.confirm('هل تريد حذف هذه الخدمة؟')) {
       return
     }
 
@@ -430,9 +426,9 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteService(id)
       setServices((current) => current.filter((item) => item.id !== id))
-      setFlash('Service deleted')
+      setFlash('تم حذف الخدمة')
     } catch (error) {
-      handleError(error, 'Failed to delete service')
+      handleError(error, 'تعذر حذف الخدمة')
     } finally {
       setSaving('')
     }
@@ -458,9 +454,9 @@ export default function AdminApp() {
         )
       )
       await refreshMedia()
-      setFlash('Media uploaded. Save the service to keep the change.')
+      setFlash('تم رفع الوسائط. احفظ الخدمة لتثبيت التغيير.')
     } catch (error) {
-      handleError(error, 'Failed to upload image')
+      handleError(error, 'تعذر رفع الوسائط')
     } finally {
       setSaving('')
     }
@@ -476,9 +472,9 @@ export default function AdminApp() {
         admin_note: order.admin_note,
       })
       await refreshOrders()
-      setFlash('Order updated')
+      setFlash('تم تحديث الطلب')
     } catch (error) {
-      handleError(error, 'Failed to update order')
+      handleError(error, 'تعذر تحديث الطلب')
     } finally {
       setSaving('')
     }
@@ -497,9 +493,9 @@ export default function AdminApp() {
       setTestimonialImageFile(null)
       await refreshTestimonials()
       await refreshMedia()
-      setFlash('Testimonial created')
+      setFlash('تم إضافة رأي العميل')
     } catch (error) {
-      handleError(error, 'Failed to create testimonial')
+      handleError(error, 'تعذر إضافة رأي العميل')
     } finally {
       setSaving('')
     }
@@ -510,16 +506,16 @@ export default function AdminApp() {
     try {
       await adminAPI.updateTestimonial(testimonial)
       await refreshTestimonials()
-      setFlash('Testimonial saved')
+      setFlash('تم حفظ رأي العميل')
     } catch (error) {
-      handleError(error, 'Failed to save testimonial')
+      handleError(error, 'تعذر حفظ رأي العميل')
     } finally {
       setSaving('')
     }
   }
 
   const deleteTestimonial = async (id) => {
-    if (!window.confirm('Delete this testimonial?')) {
+    if (!window.confirm('هل تريد حذف رأي العميل؟')) {
       return
     }
 
@@ -527,9 +523,9 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteTestimonial(id)
       setTestimonials((current) => current.filter((item) => item.id !== id))
-      setFlash('Testimonial deleted')
+      setFlash('تم حذف رأي العميل')
     } catch (error) {
-      handleError(error, 'Failed to delete testimonial')
+      handleError(error, 'تعذر حذف رأي العميل')
     } finally {
       setSaving('')
     }
@@ -542,9 +538,9 @@ export default function AdminApp() {
       const upload = await adminAPI.uploadMedia(file)
       setTestimonials((current) => current.map((item) => (item.id === testimonial.id ? { ...item, image_url: upload.data?.url } : item)))
       await refreshMedia()
-      setFlash('Image uploaded. Save the testimonial to keep the change.')
+      setFlash('تم رفع الصورة. احفظ رأي العميل لتثبيت التغيير.')
     } catch (error) {
-      handleError(error, 'Failed to upload image')
+      handleError(error, 'تعذر رفع الصورة')
     } finally {
       setSaving('')
     }
@@ -563,9 +559,9 @@ export default function AdminApp() {
       setMarketImageFile(null)
       await refreshMarketUpdates()
       await refreshMedia()
-      setFlash('Market update created')
+      setFlash('تم إنشاء تحديث السوق')
     } catch (error) {
-      handleError(error, 'Failed to create market update')
+      handleError(error, 'تعذر إنشاء تحديث السوق')
     } finally {
       setSaving('')
     }
@@ -576,16 +572,16 @@ export default function AdminApp() {
     try {
       await adminAPI.updateMarketUpdate({ ...update, published_at: fromDateTimeLocal(update.published_at) })
       await refreshMarketUpdates()
-      setFlash('Market update saved')
+      setFlash('تم حفظ تحديث السوق')
     } catch (error) {
-      handleError(error, 'Failed to save market update')
+      handleError(error, 'تعذر حفظ تحديث السوق')
     } finally {
       setSaving('')
     }
   }
 
   const deleteMarketUpdate = async (id) => {
-    if (!window.confirm('Delete this market update?')) {
+    if (!window.confirm('هل تريد حذف تحديث السوق؟')) {
       return
     }
 
@@ -593,9 +589,9 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteMarketUpdate(id)
       setMarketUpdates((current) => current.filter((item) => item.id !== id))
-      setFlash('Market update deleted')
+      setFlash('تم حذف تحديث السوق')
     } catch (error) {
-      handleError(error, 'Failed to delete market update')
+      handleError(error, 'تعذر حذف تحديث السوق')
     } finally {
       setSaving('')
     }
@@ -608,9 +604,9 @@ export default function AdminApp() {
       const upload = await adminAPI.uploadMedia(file)
       setMarketUpdates((current) => current.map((item) => (item.id === update.id ? { ...item, image_url: upload.data?.url } : item)))
       await refreshMedia()
-      setFlash('Image uploaded. Save the market update to keep the change.')
+      setFlash('تم رفع الصورة. احفظ تحديث السوق لتثبيت التغيير.')
     } catch (error) {
-      handleError(error, 'Failed to upload image')
+      handleError(error, 'تعذر رفع الصورة')
     } finally {
       setSaving('')
     }
@@ -627,53 +623,9 @@ export default function AdminApp() {
         setCoachImageFile(null)
       }
       await adminAPI.updateCoach(nextCoach)
-      setFlash('Coach profile saved')
+      setFlash('تم حفظ بيانات المدرب')
     } catch (error) {
-      handleError(error, 'Failed to save coach profile')
-    } finally {
-      setSaving('')
-    }
-  }
-
-  const createCoachSocial = async () => {
-    setSaving('social-create')
-    try {
-      await adminAPI.createCoachSocialLink(coachSocialDraft)
-      setCoachSocialDraft(emptyCoachSocial)
-      await refreshCoachSocialLinks()
-      setFlash('Social link created')
-    } catch (error) {
-      handleError(error, 'Failed to create social link')
-    } finally {
-      setSaving('')
-    }
-  }
-
-  const updateCoachSocial = async (link) => {
-    setSaving(`social-${link.id}`)
-    try {
-      await adminAPI.updateCoachSocialLink(link)
-      await refreshCoachSocialLinks()
-      setFlash('Social link saved')
-    } catch (error) {
-      handleError(error, 'Failed to save social link')
-    } finally {
-      setSaving('')
-    }
-  }
-
-  const deleteCoachSocial = async (id) => {
-    if (!window.confirm('Delete this social link?')) {
-      return
-    }
-
-    setSaving(`social-delete-${id}`)
-    try {
-      await adminAPI.deleteCoachSocialLink(id)
-      setCoachSocialLinks((current) => current.filter((item) => item.id !== id))
-      setFlash('Social link deleted')
-    } catch (error) {
-      handleError(error, 'Failed to delete social link')
+      handleError(error, 'تعذر حفظ بيانات المدرب')
     } finally {
       setSaving('')
     }
@@ -686,16 +638,16 @@ export default function AdminApp() {
       await adminAPI.uploadMedia(mediaUploadFile)
       setMediaUploadFile(null)
       await refreshMedia()
-      setFlash('Media uploaded')
+      setFlash('تم رفع الملف')
     } catch (error) {
-      handleError(error, 'Failed to upload media')
+      handleError(error, 'تعذر رفع الملف')
     } finally {
       setSaving('')
     }
   }
 
   const deleteMedia = async (id) => {
-    if (!window.confirm('Delete this media file?')) {
+    if (!window.confirm('هل تريد حذف هذا الملف؟')) {
       return
     }
 
@@ -703,9 +655,9 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteMedia(id)
       setMedia((current) => current.filter((item) => item.id !== id))
-      setFlash('Media deleted')
+      setFlash('تم حذف الملف')
     } catch (error) {
-      handleError(error, 'Failed to delete media')
+      handleError(error, 'تعذر حذف الملف')
     } finally {
       setSaving('')
     }
@@ -720,7 +672,7 @@ export default function AdminApp() {
   }
 
   if (booting) {
-    return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">Loading admin...</div>
+    return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">جاري تحميل لوحة التحكم...</div>
   }
 
   return (
@@ -736,8 +688,8 @@ export default function AdminApp() {
         >
           <div className="flex items-center justify-between px-2 py-4">
             <div>
-              <div className="font-bold text-white">Admin Dashboard</div>
-              <div className="text-xs text-slate-400">Unified control for services, content, and operations</div>
+              <div className="font-bold text-white">لوحة التحكم</div>
+              <div className="text-xs text-slate-400">تحكم موحد في محتوى موقع Hunter Trading</div>
             </div>
             <button onClick={() => setSidebarOpen(false)} className="rounded-xl p-2 text-slate-300 hover:bg-white/5 xl:hidden">
               <X className="h-5 w-5" />
@@ -772,7 +724,7 @@ export default function AdminApp() {
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl border border-red-500/20 px-4 py-3 text-red-300 hover:bg-red-500/10"
           >
             <LogOut className="h-5 w-5" />
-            <span>Logout</span>
+            <span>تسجيل الخروج</span>
           </button>
         </aside>
 
@@ -859,14 +811,10 @@ export default function AdminApp() {
               setCoach={setCoach}
               coachImageFile={coachImageFile}
               setCoachImageFile={setCoachImageFile}
-              socialLinks={coachSocialLinks}
-              setSocialLinks={setCoachSocialLinks}
-              socialDraft={coachSocialDraft}
-              setSocialDraft={setCoachSocialDraft}
+              settings={siteSettings}
+              setSettings={setSiteSettings}
               onSaveCoach={saveCoach}
-              onCreateSocial={createCoachSocial}
-              onUpdateSocial={updateCoachSocial}
-              onDeleteSocial={deleteCoachSocial}
+              onSaveSettings={saveSettings}
               saving={saving}
             />
           ) : null}

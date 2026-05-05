@@ -5,22 +5,22 @@ export default function MediaLibraryModule({ media, uploadFile, setUploadFile, o
   return (
     <>
       <SectionCard
-        title="Upload media"
+        title="رفع ملف جديد"
         action={
           <ActionButton onClick={onUpload} className="w-full bg-green-600 text-white sm:w-auto">
-            {saving === 'media-upload' ? 'Uploading...' : 'Upload file'}
+            {saving === 'media-upload' ? 'جاري الرفع...' : 'رفع الملف'}
           </ActionButton>
         }
       >
         <FilePicker
-          label="Choose file"
+          label="اختيار صورة أو فيديو"
           preview=""
           onChange={setUploadFile}
-          buttonLabel={uploadFile?.name || 'Choose a new image or video'}
+          buttonLabel={uploadFile?.name || 'اختيار ملف من الجهاز'}
         />
       </SectionCard>
 
-      <SectionCard title="Media library">
+      <SectionCard title="مكتبة الوسائط">
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
           {media.map((item) => (
             <div key={item.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-3">
@@ -29,9 +29,9 @@ export default function MediaLibraryModule({ media, uploadFile, setUploadFile, o
               <div className="mt-1 text-xs text-slate-500">{item.created_at}</div>
               <div className="mt-3 flex gap-2">
                 <ActionButton onClick={() => navigator.clipboard.writeText(item.filepath)} className="flex-1 bg-white/5 text-slate-200">
-                  <span className="inline-flex items-center gap-2"><Copy className="h-4 w-4" /> Copy</span>
+                  <span className="inline-flex items-center gap-2"><Copy className="h-4 w-4" /> نسخ الرابط</span>
                 </ActionButton>
-                <ActionButton onClick={() => onDelete(item.id)} className="bg-red-500/10 text-red-300">
+                <ActionButton onClick={() => onDelete(item.id)} className="bg-red-500/10 text-red-300" aria-label="حذف الملف">
                   <Trash2 className="h-4 w-4" />
                 </ActionButton>
               </div>

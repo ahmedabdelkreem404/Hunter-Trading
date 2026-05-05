@@ -30,6 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
           <Route path="/terms-and-conditions" element={<LegalPage />} />
           <Route path="/risk-disclaimer" element={<LegalPage />} />
           <Route path="/checkout/:slug" element={<CheckoutPage />} />
+          <Route path="/affiliate" element={<ServiceDetailsPage />} />
           <Route path="/services/:slug" element={<ServiceDetailsPage />} />
           <Route path="/funded/:slug" element={<ServiceDetailsPage />} />
           <Route path="/vip/:slug" element={<ServiceDetailsPage />} />

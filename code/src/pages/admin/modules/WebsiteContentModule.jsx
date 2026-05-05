@@ -1,6 +1,20 @@
 import { Plus, Trash2 } from 'lucide-react'
 import { ActionButton, Field, MediaPicker, SectionCard, TextArea, Toggle } from './shared/AdminUI'
 
+const sectionNames = {
+  hero: 'الهيرو',
+  funded: 'الحسابات الممولة',
+  vip: 'VIP',
+  scalp: 'Scalp',
+  offers: 'العروض',
+  courses: 'الكورسات',
+  testimonials: 'آراء العملاء',
+  market: 'متابعة السوق',
+  coach: 'المدرب',
+  navigation: 'النافبار',
+  footer: 'الفوتر',
+}
+
 function statsToText(stats = []) {
   return (stats || []).map((item) => `${item.value || ''}|${item.label_en || ''}|${item.label_ar || ''}`).join('\n')
 }
@@ -44,7 +58,7 @@ function MenuManager({ title, items, onChange }) {
           }
           className="w-full bg-white/5 text-slate-200 sm:w-auto"
         >
-          <span className="inline-flex items-center gap-2"><Plus className="h-4 w-4" /> Add item</span>
+          <span className="inline-flex items-center gap-2"><Plus className="h-4 w-4" /> إضافة رابط</span>
         </ActionButton>
       }
     >
@@ -52,16 +66,16 @@ function MenuManager({ title, items, onChange }) {
         {safeItems.map((item, index) => (
           <div key={`${item.href}-${index}`} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
             <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-              <Field label="Label EN" value={item.label_en || ''} onChange={(event) => updateItem(index, { label_en: event.target.value })} />
-              <Field label="Label AR" value={item.label_ar || ''} onChange={(event) => updateItem(index, { label_ar: event.target.value })} />
-              <Field label="Href" value={item.href || ''} onChange={(event) => updateItem(index, { href: event.target.value })} />
-              <Field label="Sort order" type="number" value={item.sort_order || 0} onChange={(event) => updateItem(index, { sort_order: Number(event.target.value) })} />
-              <Toggle label="Visible" checked={!!item.is_visible} onChange={(value) => updateItem(index, { is_visible: value })} />
-              <Toggle label="Open in new tab" checked={!!item.new_tab} onChange={(value) => updateItem(index, { new_tab: value })} />
+              <Field label="الاسم بالإنجليزية" value={item.label_en || ''} onChange={(event) => updateItem(index, { label_en: event.target.value })} />
+              <Field label="الاسم بالعربية" value={item.label_ar || ''} onChange={(event) => updateItem(index, { label_ar: event.target.value })} />
+              <Field label="الرابط" value={item.href || ''} onChange={(event) => updateItem(index, { href: event.target.value })} />
+              <Field label="الترتيب" type="number" value={item.sort_order || 0} onChange={(event) => updateItem(index, { sort_order: Number(event.target.value) })} />
+              <Toggle label="ظاهر" checked={!!item.is_visible} onChange={(value) => updateItem(index, { is_visible: value })} />
+              <Toggle label="يفتح في تب جديد" checked={!!item.new_tab} onChange={(value) => updateItem(index, { new_tab: value })} />
             </div>
             <div className="mt-4">
               <ActionButton onClick={() => removeItem(index)} className="bg-red-500/10 text-red-300">
-                <span className="inline-flex items-center gap-2"><Trash2 className="h-4 w-4" /> Remove</span>
+                <span className="inline-flex items-center gap-2"><Trash2 className="h-4 w-4" /> حذف</span>
               </ActionButton>
             </div>
           </div>
@@ -84,89 +98,90 @@ export default function WebsiteContentModule({ sections, setSections, onSave, sa
   const hero = sections.find((section) => section.section_key === 'hero')
   const navigation = sections.find((section) => section.section_key === 'navigation')
   const footer = sections.find((section) => section.section_key === 'footer')
-  const contentSections = sections.filter((section) => !['coach', 'navigation', 'footer'].includes(section.section_key))
+  const contentSections = sections.filter((section) => !['hero', 'coach', 'navigation', 'footer'].includes(section.section_key))
 
   return (
     <>
       {hero ? (
         <SectionCard
-          title="Hero content and stats"
+          title="الهيرو: النصوص والفيديو والإحصائيات"
           action={
             <ActionButton onClick={onSave} className="w-full bg-green-600 text-white sm:w-auto">
-              {saving ? 'Saving...' : 'Save website content'}
+              {saving ? 'جاري الحفظ...' : 'حفظ محتوى الموقع'}
             </ActionButton>
           }
         >
           <div className="grid gap-4 md:grid-cols-2">
-            <Field label="Title EN" value={hero.title_en || ''} onChange={(event) => updateSection('hero', { title_en: event.target.value })} />
-            <Field label="Title AR" value={hero.title_ar || ''} onChange={(event) => updateSection('hero', { title_ar: event.target.value })} />
-            <Field label="Subtitle EN" value={hero.subtitle_en || ''} onChange={(event) => updateSection('hero', { subtitle_en: event.target.value })} />
-            <Field label="Subtitle AR" value={hero.subtitle_ar || ''} onChange={(event) => updateSection('hero', { subtitle_ar: event.target.value })} />
-            <TextArea label="Body EN" className="md:col-span-2" value={hero.body_en || ''} onChange={(event) => updateSection('hero', { body_en: event.target.value })} />
-            <TextArea label="Body AR" className="md:col-span-2" value={hero.body_ar || ''} onChange={(event) => updateSection('hero', { body_ar: event.target.value })} />
-            <Field label="Primary CTA EN" value={hero.cta_label_en || ''} onChange={(event) => updateSection('hero', { cta_label_en: event.target.value })} />
-            <Field label="Primary CTA AR" value={hero.cta_label_ar || ''} onChange={(event) => updateSection('hero', { cta_label_ar: event.target.value })} />
-            <Field label="Primary CTA URL" value={hero.cta_url || ''} onChange={(event) => updateSection('hero', { cta_url: event.target.value })} />
-            <Field label="Secondary CTA EN" value={hero.secondary_cta_label_en || ''} onChange={(event) => updateSection('hero', { secondary_cta_label_en: event.target.value })} />
-            <Field label="Secondary CTA AR" value={hero.secondary_cta_label_ar || ''} onChange={(event) => updateSection('hero', { secondary_cta_label_ar: event.target.value })} />
-            <Field label="Secondary CTA URL" value={hero.secondary_cta_url || ''} onChange={(event) => updateSection('hero', { secondary_cta_url: event.target.value })} />
-            <TextArea label="Stats lines: value|label_en|label_ar" className="md:col-span-2" value={statsToText(hero.stats)} onChange={(event) => updateSection('hero', { stats: textToStats(event.target.value) })} />
+            <Field label="العنوان بالإنجليزية" value={hero.title_en || ''} onChange={(event) => updateSection('hero', { title_en: event.target.value })} />
+            <Field label="العنوان بالعربية" value={hero.title_ar || ''} onChange={(event) => updateSection('hero', { title_ar: event.target.value })} />
+            <Field label="العنوان الفرعي بالإنجليزية" value={hero.subtitle_en || ''} onChange={(event) => updateSection('hero', { subtitle_en: event.target.value })} />
+            <Field label="العنوان الفرعي بالعربية" value={hero.subtitle_ar || ''} onChange={(event) => updateSection('hero', { subtitle_ar: event.target.value })} />
+            <TextArea label="النص بالإنجليزية" className="md:col-span-2" value={hero.body_en || ''} onChange={(event) => updateSection('hero', { body_en: event.target.value })} />
+            <TextArea label="النص بالعربية" className="md:col-span-2" value={hero.body_ar || ''} onChange={(event) => updateSection('hero', { body_ar: event.target.value })} />
+            <Field label="زر رئيسي بالإنجليزية" value={hero.cta_label_en || ''} onChange={(event) => updateSection('hero', { cta_label_en: event.target.value })} />
+            <Field label="زر رئيسي بالعربية" value={hero.cta_label_ar || ''} onChange={(event) => updateSection('hero', { cta_label_ar: event.target.value })} />
+            <Field label="رابط الزر الرئيسي" value={hero.cta_url || ''} onChange={(event) => updateSection('hero', { cta_url: event.target.value })} />
+            <Field label="زر ثانوي بالإنجليزية" value={hero.secondary_cta_label_en || ''} onChange={(event) => updateSection('hero', { secondary_cta_label_en: event.target.value })} />
+            <Field label="زر ثانوي بالعربية" value={hero.secondary_cta_label_ar || ''} onChange={(event) => updateSection('hero', { secondary_cta_label_ar: event.target.value })} />
+            <Field label="رابط الزر الثانوي" value={hero.secondary_cta_url || ''} onChange={(event) => updateSection('hero', { secondary_cta_url: event.target.value })} />
+            <TextArea label="الإحصائيات: القيمة|الاسم بالإنجليزية|الاسم بالعربية" className="md:col-span-2" value={statsToText(hero.stats)} onChange={(event) => updateSection('hero', { stats: textToStats(event.target.value) })} />
           </div>
 
           <div className="mt-6 rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-            <h3 className="mb-4 text-sm font-semibold text-white">Hero video</h3>
+            <h3 className="mb-4 text-sm font-semibold text-white">فيديو خلفية الهيرو</h3>
             <div className="grid gap-4 md:grid-cols-2">
-              <Field label="Hero video URL" value={hero.settings?.hero_video_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_video_url: event.target.value })} />
-              <Field label="Mobile video URL" value={hero.settings?.hero_mobile_video_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_mobile_video_url: event.target.value })} />
+              <Field label="رابط فيديو الهيرو" value={hero.settings?.hero_video_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_video_url: event.target.value })} />
+              <Field label="رابط فيديو الموبايل" value={hero.settings?.hero_mobile_video_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_mobile_video_url: event.target.value })} />
               <MediaPicker
-                label="Select hero video from media"
+                label="اختيار فيديو الهيرو من المكتبة"
                 media={media}
                 selectedUrl={hero.settings?.hero_video_url || ''}
                 onSelect={(item) => updateSectionSettings('hero', { hero_video_url: item.filepath })}
               />
               <MediaPicker
-                label="Select mobile video from media"
+                label="اختيار فيديو الموبايل من المكتبة"
                 media={media}
                 selectedUrl={hero.settings?.hero_mobile_video_url || ''}
                 onSelect={(item) => updateSectionSettings('hero', { hero_mobile_video_url: item.filepath })}
               />
-              <Field label="Poster image URL" value={hero.settings?.hero_video_poster_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_video_poster_url: event.target.value })} />
-              <Field label="Fallback image URL" value={hero.settings?.hero_fallback_image_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_fallback_image_url: event.target.value })} />
+              <Field label="رابط صورة الفيديو" value={hero.settings?.hero_video_poster_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_video_poster_url: event.target.value })} />
+              <Field label="رابط الصورة البديلة" value={hero.settings?.hero_fallback_image_url || ''} onChange={(event) => updateSectionSettings('hero', { hero_fallback_image_url: event.target.value })} />
               <MediaPicker
-                label="Select poster from media"
+                label="اختيار صورة الفيديو من المكتبة"
                 media={media}
                 selectedUrl={hero.settings?.hero_video_poster_url || ''}
                 onSelect={(item) => updateSectionSettings('hero', { hero_video_poster_url: item.filepath })}
               />
               <MediaPicker
-                label="Select fallback image from media"
+                label="اختيار الصورة البديلة من المكتبة"
                 media={media}
                 selectedUrl={hero.settings?.hero_fallback_image_url || ''}
                 onSelect={(item) => updateSectionSettings('hero', { hero_fallback_image_url: item.filepath })}
               />
-              <Toggle label="Autoplay" checked={hero.settings?.hero_video_autoplay !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_autoplay: value })} />
-              <Toggle label="Muted" checked={hero.settings?.hero_video_muted !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_muted: value })} />
-              <Toggle label="Loop" checked={hero.settings?.hero_video_loop !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_loop: value })} />
-              <Toggle label="Show controls" checked={!!hero.settings?.hero_video_controls} onChange={(value) => updateSectionSettings('hero', { hero_video_controls: value })} />
+              <Toggle label="تشغيل تلقائي" checked={hero.settings?.hero_video_autoplay !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_autoplay: value })} />
+              <Toggle label="كتم الصوت" checked={hero.settings?.hero_video_muted !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_muted: value })} />
+              <Toggle label="تكرار الفيديو" checked={hero.settings?.hero_video_loop !== false} onChange={(value) => updateSectionSettings('hero', { hero_video_loop: value })} />
+              <Toggle label="إظهار أزرار التحكم" checked={!!hero.settings?.hero_video_controls} onChange={(value) => updateSectionSettings('hero', { hero_video_controls: value })} />
             </div>
           </div>
         </SectionCard>
       ) : null}
 
-      <SectionCard title="Homepage sections">
+      <SectionCard title="سكشنات الصفحة الرئيسية">
         <div className="space-y-4">
           {contentSections.map((section) => (
             <div key={section.section_key} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+              <div className="mb-4 text-base font-semibold text-hunter-green">{sectionNames[section.section_key] || section.section_key}</div>
               <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field label="Section title EN" value={section.title_en || ''} onChange={(event) => updateSection(section.section_key, { title_en: event.target.value })} />
-                <Field label="Section title AR" value={section.title_ar || ''} onChange={(event) => updateSection(section.section_key, { title_ar: event.target.value })} />
-                <Field label="Sort order" type="number" value={section.sort_order || 0} onChange={(event) => updateSection(section.section_key, { sort_order: Number(event.target.value) })} />
-                <Toggle label="Visible" checked={!!section.is_visible} onChange={(value) => updateSection(section.section_key, { is_visible: value ? 1 : 0 })} />
-                <TextArea label="Subtitle EN" className="xl:col-span-2" value={section.subtitle_en || ''} onChange={(event) => updateSection(section.section_key, { subtitle_en: event.target.value })} />
-                <TextArea label="Subtitle AR" className="xl:col-span-2" value={section.subtitle_ar || ''} onChange={(event) => updateSection(section.section_key, { subtitle_ar: event.target.value })} />
-                <Field label="CTA EN" value={section.cta_label_en || ''} onChange={(event) => updateSection(section.section_key, { cta_label_en: event.target.value })} />
-                <Field label="CTA AR" value={section.cta_label_ar || ''} onChange={(event) => updateSection(section.section_key, { cta_label_ar: event.target.value })} />
-                <Field label="CTA URL" className="md:col-span-2" value={section.cta_url || ''} onChange={(event) => updateSection(section.section_key, { cta_url: event.target.value })} />
+                <Field label="عنوان السكشن بالإنجليزية" value={section.title_en || ''} onChange={(event) => updateSection(section.section_key, { title_en: event.target.value })} />
+                <Field label="عنوان السكشن بالعربية" value={section.title_ar || ''} onChange={(event) => updateSection(section.section_key, { title_ar: event.target.value })} />
+                <Field label="الترتيب" type="number" value={section.sort_order || 0} onChange={(event) => updateSection(section.section_key, { sort_order: Number(event.target.value) })} />
+                <Toggle label="ظاهر" checked={!!section.is_visible} onChange={(value) => updateSection(section.section_key, { is_visible: value ? 1 : 0 })} />
+                <TextArea label="الوصف بالإنجليزية" className="xl:col-span-2" value={section.subtitle_en || ''} onChange={(event) => updateSection(section.section_key, { subtitle_en: event.target.value })} />
+                <TextArea label="الوصف بالعربية" className="xl:col-span-2" value={section.subtitle_ar || ''} onChange={(event) => updateSection(section.section_key, { subtitle_ar: event.target.value })} />
+                <Field label="نص الزر بالإنجليزية" value={section.cta_label_en || ''} onChange={(event) => updateSection(section.section_key, { cta_label_en: event.target.value })} />
+                <Field label="نص الزر بالعربية" value={section.cta_label_ar || ''} onChange={(event) => updateSection(section.section_key, { cta_label_ar: event.target.value })} />
+                <Field label="رابط الزر" className="md:col-span-2" value={section.cta_url || ''} onChange={(event) => updateSection(section.section_key, { cta_url: event.target.value })} />
               </div>
             </div>
           ))}
@@ -175,7 +190,7 @@ export default function WebsiteContentModule({ sections, setSections, onSave, sa
 
       {navigation ? (
         <MenuManager
-          title="Navbar items"
+          title="روابط النافبار"
           items={navigation.settings?.menu_items || []}
           onChange={(items) => updateSection('navigation', { settings: { ...(navigation.settings || {}), menu_items: items } })}
         />
@@ -184,12 +199,12 @@ export default function WebsiteContentModule({ sections, setSections, onSave, sa
       {footer ? (
         <>
           <MenuManager
-            title="Footer quick links"
+            title="روابط الفوتر السريعة"
             items={footer.settings?.quick_links || []}
             onChange={(items) => updateSection('footer', { settings: { ...(footer.settings || {}), quick_links: items } })}
           />
           <MenuManager
-            title="Footer legal links"
+            title="روابط الفوتر القانونية"
             items={footer.settings?.legal_links || []}
             onChange={(items) => updateSection('footer', { settings: { ...(footer.settings || {}), legal_links: items } })}
           />

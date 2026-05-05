@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { Link, Navigate, useParams } from 'react-router-dom'
 import { useTranslation } from 'react-i18next'
 import { ArrowLeft, CreditCard, Smartphone, Upload, CheckCircle2 } from 'lucide-react'
 import { checkoutAPI, servicesAPI, settingsAPI } from '../api'
@@ -24,8 +24,15 @@ export default function CheckoutPage() {
   const [success, setSuccess] = useState(null)
   const [error, setError] = useState('')
 
-  const instapayNumber = settings.general?.instapay_number?.value || settings.general?.support_email?.value || ''
-  const vodafoneCashNumber = settings.general?.vodafone_cash_number?.value || settings.general?.whatsapp_url?.value || ''
+  const getSetting = (key) => settings.general?.[key]?.value || ''
+  const instapayNumber = getSetting('instapay_number')
+  const instapayAccountName = getSetting('instapay_account_name')
+  const vodafoneCashNumber = getSetting('vodafone_cash_number')
+  const vodafoneCashAccountName = getSetting('vodafone_cash_account_name')
+  const bankTransferDetails = getSetting('bank_transfer_details')
+  const paymentInstructions = isArabic
+    ? getSetting('payment_instructions_ar') || getSetting('payment_instructions_en')
+    : getSetting('payment_instructions_en') || getSetting('payment_instructions_ar')
 
   const submitOrder = async (event) => {
     event.preventDefault()
@@ -73,6 +80,10 @@ export default function CheckoutPage() {
     )
   }
 
+  if (product.type === 'scalp') {
+    return <Navigate to={`/services/${product.slug}`} replace />
+  }
+
   return (
     <div className="min-h-screen bg-hunter-bg text-hunter-text" dir={isArabic ? 'rtl' : 'ltr'}>
       <div className="mx-auto max-w-6xl px-4 py-10 sm:px-6 lg:px-8">
@@ -103,6 +114,7 @@ export default function CheckoutPage() {
                   <span className="font-semibold">InstaPay</span>
                 </div>
                 <div className="text-hunter-text-muted">{instapayNumber || '-'}</div>
+                {instapayAccountName ? <div className="mt-1 text-sm text-hunter-text-muted">{instapayAccountName}</div> : null}
               </div>
               <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
                 <div className="mb-2 flex items-center gap-2 text-hunter-green">
@@ -110,7 +122,17 @@ export default function CheckoutPage() {
                   <span className="font-semibold">Vodafone Cash</span>
                 </div>
                 <div className="text-hunter-text-muted">{vodafoneCashNumber || '-'}</div>
+                {vodafoneCashAccountName ? <div className="mt-1 text-sm text-hunter-text-muted">{vodafoneCashAccountName}</div> : null}
               </div>
+              {bankTransferDetails ? (
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 md:col-span-2">
+                  <div className="mb-2 flex items-center gap-2 text-hunter-green">
+                    <CreditCard className="h-5 w-5" />
+                    <span className="font-semibold">{isArabic ? 'تحويل بنكي / طرق إضافية' : 'Bank transfer / extra methods'}</span>
+                  </div>
+                  <div className="whitespace-pre-wrap text-hunter-text-muted">{bankTransferDetails}</div>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -133,9 +155,9 @@ export default function CheckoutPage() {
                   {isArabic ? 'إكمال الدفع' : 'Complete Payment'}
                 </h2>
                 <p className="text-hunter-text-muted">
-                  {isArabic
+                  {paymentInstructions || (isArabic
                     ? 'حوّل المبلغ، ارفع الاسكرين شوت، وسنراجع الطلب يدويًا.'
-                    : 'Send the payment, upload the screenshot, and we will review the order manually.'}
+                    : 'Send the payment, upload the screenshot, and we will review the order manually.')}
                 </p>
 
                 <input
@@ -166,6 +188,7 @@ export default function CheckoutPage() {
                 >
                   <option value="instapay">InstaPay</option>
                   <option value="vodafone_cash">Vodafone Cash</option>
+                  {bankTransferDetails ? <option value="bank_transfer">{isArabic ? 'تحويل بنكي / طريقة إضافية' : 'Bank transfer / extra method'}</option> : null}
                 </select>
 
                 <label className="block rounded-2xl border border-dashed border-white/15 bg-white/5 p-4 text-hunter-text-muted">

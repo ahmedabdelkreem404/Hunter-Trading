@@ -1,27 +1,41 @@
 import { ActionButton, Field, FilePicker, SectionCard, TextArea } from './shared/AdminUI'
+import SocialSettingsControls from './shared/SocialSettingsControls'
 
 export default function SettingsModule({ settings, setSettings, siteLogoFile, setSiteLogoFile, onSave, saving }) {
   return (
     <>
       <SectionCard
         title="الهوية والتواصل"
-        action={<ActionButton onClick={onSave} className="w-full bg-green-600 text-white sm:w-auto">{saving ? 'جارٍ الحفظ...' : 'حفظ الإعدادات'}</ActionButton>}
+        action={<ActionButton onClick={onSave} className="w-full bg-green-600 text-white sm:w-auto">{saving ? 'جار الحفظ...' : 'حفظ الإعدادات'}</ActionButton>}
       >
         <div className="grid gap-4 md:grid-cols-2">
           <FilePicker label="شعار الموقع" preview={settings.site_logo || ''} onChange={setSiteLogoFile} buttonLabel={siteLogoFile?.name || 'اختر الشعار'} accept="image/*" />
           <Field label="اسم الموقع" value={settings.website_name || ''} onChange={(e) => setSettings((current) => ({ ...current, website_name: e.target.value }))} />
           <Field label="البريد الإداري" value={settings.support_email || ''} onChange={(e) => setSettings((current) => ({ ...current, support_email: e.target.value }))} />
-          <Field label="رابط تيليجرام" value={settings.telegram_url || ''} onChange={(e) => setSettings((current) => ({ ...current, telegram_url: e.target.value }))} />
-          <Field label="رابط واتساب" value={settings.whatsapp_url || ''} onChange={(e) => setSettings((current) => ({ ...current, whatsapp_url: e.target.value }))} />
-          <Field label="رقم InstaPay" value={settings.instapay_number || ''} onChange={(e) => setSettings((current) => ({ ...current, instapay_number: e.target.value }))} />
-          <Field label="رقم Vodafone Cash" value={settings.vodafone_cash_number || ''} onChange={(e) => setSettings((current) => ({ ...current, vodafone_cash_number: e.target.value }))} />
           <Field label="الموقع" value={settings.location || ''} onChange={(e) => setSettings((current) => ({ ...current, location: e.target.value }))} />
-          <Field label="رابط إنستجرام" value={settings.instagram_url || ''} onChange={(e) => setSettings((current) => ({ ...current, instagram_url: e.target.value }))} />
-          <Field label="رابط يوتيوب" value={settings.youtube_url || ''} onChange={(e) => setSettings((current) => ({ ...current, youtube_url: e.target.value }))} />
-          <Field label="رابط فيسبوك" value={settings.facebook_url || ''} onChange={(e) => setSettings((current) => ({ ...current, facebook_url: e.target.value }))} />
-          <Field label="رابط TikTok" value={settings.tiktok_url || ''} onChange={(e) => setSettings((current) => ({ ...current, tiktok_url: e.target.value }))} />
-          <Field label="رابط X / Twitter" value={settings.twitter_url || ''} onChange={(e) => setSettings((current) => ({ ...current, twitter_url: e.target.value }))} />
         </div>
+      </SectionCard>
+
+      <SectionCard title="معلومات الدفع">
+        <p className="mb-5 text-sm leading-7 text-slate-400">
+          البيانات هنا تظهر في صفحة الدفع للمنتجات المدفوعة فقط. خدمة السكالب لا تستخدم الدفع داخل الموقع.
+        </p>
+        <div className="grid gap-4 md:grid-cols-2">
+          <Field label="رقم InstaPay" value={settings.instapay_number || ''} onChange={(e) => setSettings((current) => ({ ...current, instapay_number: e.target.value }))} />
+          <Field label="اسم حساب InstaPay" value={settings.instapay_account_name || ''} onChange={(e) => setSettings((current) => ({ ...current, instapay_account_name: e.target.value }))} />
+          <Field label="رقم Vodafone Cash" value={settings.vodafone_cash_number || ''} onChange={(e) => setSettings((current) => ({ ...current, vodafone_cash_number: e.target.value }))} />
+          <Field label="اسم محفظة Vodafone Cash" value={settings.vodafone_cash_account_name || ''} onChange={(e) => setSettings((current) => ({ ...current, vodafone_cash_account_name: e.target.value }))} />
+          <TextArea label="بيانات التحويل البنكي أو طرق دفع إضافية" value={settings.bank_transfer_details || ''} onChange={(e) => setSettings((current) => ({ ...current, bank_transfer_details: e.target.value }))} />
+          <TextArea label="تعليمات الدفع بالعربية" value={settings.payment_instructions_ar || ''} onChange={(e) => setSettings((current) => ({ ...current, payment_instructions_ar: e.target.value }))} />
+          <TextArea label="تعليمات الدفع بالإنجليزية" value={settings.payment_instructions_en || ''} onChange={(e) => setSettings((current) => ({ ...current, payment_instructions_en: e.target.value }))} />
+        </div>
+      </SectionCard>
+
+      <SectionCard title="روابط السوشيال الموحدة">
+        <p className="mb-5 text-sm leading-7 text-slate-400">
+          أي منصة يتم تفعيلها هنا ستظهر بنفس الأيقونة واللون في الفوتر وسكشن الكوتش معًا.
+        </p>
+        <SocialSettingsControls settings={settings} setSettings={setSettings} />
       </SectionCard>
 
       <SectionCard title="الألوان والهوية البصرية">

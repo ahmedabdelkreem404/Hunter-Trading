@@ -91,18 +91,19 @@ function asBool(value, fallback = false) {
   return value === true || value === 1 || value === '1'
 }
 
-function ProductCardMedia({ product, title }) {
+function ProductCardMedia({ product, title, compact = false }) {
   const explicitMediaUrl = product.card_media_url || ''
   const mediaType = product.card_media_type || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
   const fallbackImageUrl = product.thumbnail_url || product.cover_url || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
+  const mediaClassName = `${compact ? 'h-28 sm:h-44' : 'h-44'} w-full object-cover transition duration-500 group-hover:scale-[1.02]`
 
   if (mediaType === 'video' && explicitMediaUrl) {
     return (
       <video
         src={explicitMediaUrl}
         poster={product.card_video_poster_url || product.thumbnail_url || undefined}
-        className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+        className={mediaClassName}
         autoPlay={asBool(product.card_video_autoplay, false) && asBool(product.card_video_muted, true)}
         muted={asBool(product.card_video_muted, true)}
         loop={asBool(product.card_video_loop, true)}
@@ -117,7 +118,7 @@ function ProductCardMedia({ product, title }) {
       <iframe
         src={explicitMediaUrl}
         title={title}
-        className="h-44 w-full"
+        className={`${compact ? 'h-28 sm:h-44' : 'h-44'} w-full`}
         loading="lazy"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -130,19 +131,23 @@ function ProductCardMedia({ product, title }) {
       <img
         src={mediaUrl}
         alt={title}
-        className="h-44 w-full object-cover transition duration-500 group-hover:scale-[1.02]"
+        className={mediaClassName}
       />
     )
   }
 
   return (
-    <div className="flex h-44 items-center justify-center">
-      <Package2 className="h-14 w-14 text-hunter-text" />
+    <div className={`flex ${compact ? 'h-28 sm:h-44' : 'h-44'} items-center justify-center`}>
+      <Package2 className={`${compact ? 'h-10 w-10 sm:h-14 sm:w-14' : 'h-14 w-14'} text-hunter-text`} />
     </div>
   )
 }
 
 function resolveCardAction(product, isScalp) {
+  if (isScalp) {
+    return { href: `/services/${product.slug}`, external: false }
+  }
+
   const action = product.cta_action || (isScalp ? 'details' : 'checkout')
 
   if (isScalp && !['checkout', 'external', 'whatsapp', 'telegram'].includes(action)) {
@@ -155,6 +160,22 @@ function resolveCardAction(product, isScalp) {
   if (['external', 'whatsapp', 'telegram'].includes(action)) return { href: product.cta_url || product.referral_url || `/services/${product.slug}`, external: !!(product.cta_url || product.referral_url) }
 
   return { href: isScalp ? `/services/${product.slug}` : `/checkout/${product.slug}`, external: false }
+}
+
+function getCardCtaLabel(product, isScalp, isArabic) {
+  const label = isArabic ? product.cta_label_ar : product.cta_label_en
+
+  if (!isScalp) {
+    return label || (isArabic ? 'اشتر الآن' : 'Buy Now')
+  }
+
+  const normalized = String(label || '').trim().toLowerCase()
+  const directActionLabels = ['buy now', 'checkout', 'choose platform', 'اشتر الآن', 'اختار المنصة', 'اختر المنصة']
+  if (label && !directActionLabels.includes(normalized)) {
+    return label
+  }
+
+  return isArabic ? 'عرض الشرح' : 'View details'
 }
 
 function CardAction({ action, children, className, style }) {
@@ -226,6 +247,9 @@ export default function PremiumProductSection({
     if (!showExpandToggle || showAll) return products
     return products.slice(0, 3)
   }, [products, showAll, showExpandToggle])
+  const gridClassName = category === 'scalp' && products.length > 1
+    ? 'grid grid-cols-2 gap-3 sm:gap-6 md:grid-cols-2 xl:grid-cols-3'
+    : 'grid gap-6 md:grid-cols-2 xl:grid-cols-3'
 
   return (
     <section
@@ -260,7 +284,7 @@ export default function PremiumProductSection({
 
         {products.length > 0 ? (
           <>
-            <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+            <div className={gridClassName}>
               {visibleProducts.map((product, index) => {
                 const features = getFeatures(product, isArabic)
                 const ribbonText = isArabic ? product.badge_text_ar || product.badge_text_en : product.badge_text_en || product.badge_text_ar
@@ -269,6 +293,10 @@ export default function PremiumProductSection({
                 const action = resolveCardAction(product, isScalp)
                 const detailsLabel = isArabic ? product.details_button_label_ar || 'التفاصيل' : product.details_button_label_en || 'Details'
 
+                const compactScalp = isScalp
+                const ctaLabel = getCardCtaLabel(product, isScalp, isArabic)
+                const visibleFeatures = compactScalp ? features.slice(0, 2) : features
+
                 return (
                   <motion.article
                     key={product.id}
@@ -276,7 +304,7 @@ export default function PremiumProductSection({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.45, delay: index * 0.06 }}
-                    className="group relative overflow-hidden rounded-[2rem] border border-white/10 bg-hunter-bg p-4 shadow-[0_24px_60px_rgba(0,0,0,0.16)]"
+                    className={`group relative overflow-hidden border border-white/10 bg-hunter-bg shadow-[0_24px_60px_rgba(0,0,0,0.16)] ${compactScalp ? 'rounded-2xl p-2.5 sm:rounded-[2rem] sm:p-4' : 'rounded-[2rem] p-4'}`}
                   >
                     <div
                       className="absolute inset-0"
@@ -296,7 +324,7 @@ export default function PremiumProductSection({
                       </div>
                     ) : null}
 
-                    <div className="relative z-10 rounded-[1.65rem] border border-white/10 bg-[color:var(--bg-secondary)]/55 p-4 sm:p-5">
+                    <div className={`relative z-10 border border-white/10 bg-[color:var(--bg-secondary)]/55 ${compactScalp ? 'rounded-2xl p-2.5 sm:rounded-[1.65rem] sm:p-5' : 'rounded-[1.65rem] p-4 sm:p-5'}`}>
                       <div className={`mb-4 flex items-center gap-3 ${isOffers ? 'justify-between' : 'justify-center'}`}>
                         {isOffers ? (
                           <>
@@ -314,19 +342,25 @@ export default function PremiumProductSection({
                           background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 95%, white 5%) 0%, color-mix(in srgb, var(--bg-secondary) 98%, transparent) 100%)',
                         }}
                       >
-                        <ProductCardMedia product={product} title={productTitle} />
+                        <ProductCardMedia product={product} title={productTitle} compact={compactScalp} />
                       </div>
 
                       <div className={centerCardContent ? 'text-center' : ''}>
-                        <h3 className="font-heading text-2xl font-bold text-hunter-text">{productTitle}</h3>
-                        <div className="mt-3 text-4xl font-heading font-bold" style={{ color: 'var(--product-accent)' }}>
-                          {formatMoney(product.price, product.currency)}
-                        </div>
+                        <h3 className={`font-heading font-bold text-hunter-text ${compactScalp ? 'text-lg leading-snug sm:text-2xl' : 'text-2xl'}`}>{productTitle}</h3>
+                        {isScalp ? (
+                          <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-hunter-text-muted sm:mt-3">
+                            {isArabic ? 'روابط ريفرال' : 'Referral links'}
+                          </div>
+                        ) : (
+                          <div className="mt-3 text-4xl font-heading font-bold" style={{ color: 'var(--product-accent)' }}>
+                            {formatMoney(product.price, product.currency)}
+                          </div>
+                        )}
                       </div>
 
-                      {features.length > 0 ? (
-                        <div className={`mt-5 space-y-2.5 ${centerCardContent ? 'mx-auto max-w-xs' : ''}`}>
-                          {features.map((feature, featureIndex) => (
+                      {visibleFeatures.length > 0 ? (
+                        <div className={`mt-5 space-y-2.5 ${centerCardContent ? 'mx-auto max-w-xs' : ''} ${compactScalp ? 'hidden sm:block' : ''}`}>
+                          {visibleFeatures.map((feature, featureIndex) => (
                             <div
                               key={`${product.id}-feature-${featureIndex}`}
                               className={`flex items-start gap-2 text-sm leading-6 text-hunter-text-muted ${centerCardContent ? 'justify-center text-center' : ''}`}
@@ -341,14 +375,18 @@ export default function PremiumProductSection({
                       <div className="mt-6 flex gap-2">
                         <CardAction
                           action={action}
-                          className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 font-semibold text-hunter-bg transition hover:-translate-y-0.5"
+                          className={`inline-flex min-w-0 flex-1 items-center justify-center gap-2 font-semibold text-hunter-bg transition hover:-translate-y-0.5 ${
+                            compactScalp
+                              ? 'rounded-xl px-2 py-2 text-xs leading-tight sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base'
+                              : 'rounded-2xl px-4 py-3'
+                          }`}
                           style={{
                             background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
                             boxShadow: '0 10px 22px color-mix(in srgb, var(--product-accent) 14%, transparent)',
                           }}
                         >
-                          <span className="truncate">{isArabic ? product.cta_label_ar || 'اشتر الآن' : product.cta_label_en || 'Buy Now'}</span>
-                          <ArrowRight className="h-4 w-4 shrink-0 rtl:rotate-180" />
+                          <span className={compactScalp ? 'leading-tight' : 'truncate'}>{ctaLabel}</span>
+                          <ArrowRight className={`${compactScalp ? 'hidden sm:block' : ''} h-4 w-4 shrink-0 rtl:rotate-180`} />
                         </CardAction>
 
                         {isScalp ? (
@@ -356,7 +394,11 @@ export default function PremiumProductSection({
                             to={`/services/${product.slug}`}
                             aria-label={`${detailsLabel}: ${productTitle}`}
                             title={detailsLabel}
-                            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green"
+                            className={`inline-flex shrink-0 items-center justify-center border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green ${
+                              compactScalp
+                                ? 'h-10 w-10 rounded-xl sm:h-12 sm:w-12 sm:rounded-2xl'
+                                : 'h-12 w-12 rounded-2xl'
+                            }`}
                           >
                             <Info className="h-5 w-5" />
                           </Link>
