@@ -1,6 +1,8 @@
 # Hunter Trading
 
-واجهة `React + Vite` مع API مبني بـ `PHP` وقاعدة بيانات `MySQL`.
+موقع عميل لبيع وتسويق خدمات التداول، مبني بواجهة `React + Vite` مع API مبني بـ `PHP` وقاعدة بيانات `MySQL`.
+
+المشروع مملوك لعميل واحد وليس مشروع SaaS أو منصة متعددة العملاء. لوحة التحكم مخصصة لإدارة محتوى الموقع الظاهر للزوار: الخدمات، العروض، الكورسات، روابط الإحالة، المدفوعات، السوشيال، والمحتوى القانوني.
 
 ## مكان المشروع
 
@@ -112,6 +114,23 @@ npm run build
 ```text
 code/dist
 ```
+
+تجهيز نسخة الرفع داخل `code/deploy/public_html`:
+
+```powershell
+cd code
+powershell -ExecutionPolicy Bypass -File scripts\prepare-public-html.ps1
+```
+
+## خطوات النشر
+
+1. ارفع محتويات `code/deploy/public_html` إلى `public_html` في الاستضافة.
+2. لو قاعدة البيانات جديدة، استورد `code/deploy/schema.sql`. لو قاعدة البيانات موجودة بالفعل، شغّل ملفات `code/deploy/migrations` بالترتيب.
+3. انسخ `code/deploy/.env.production.example` إلى `.env` بجوار مجلد `api` أو في جذر المشروع المرفوع، ثم اضبط `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, و`TWELVE_DATA_API_KEY`.
+4. اضبط `CORS_ALLOWED_ORIGINS` في `.env` على دومين الموقع الفعلي عند الحاجة، مثل `https://example.com`.
+5. ادخل لوحة الأدمن بالحساب المؤقت وغيّر كلمة المرور فورًا قبل تسليم الموقع.
+6. تأكد من حدود الرفع في الاستضافة (`upload_max_filesize` و`post_max_size`) بحيث تناسب صور وفيديوهات الموقع، وأن مجلد `uploads` قابل للكتابة.
+7. راجع أن `uploads/.htaccess` موجود لمنع تنفيذ ملفات PHP داخل مجلد الرفع.
 
 ## ما تم تجهيزه
 

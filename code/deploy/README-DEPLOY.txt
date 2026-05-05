@@ -1,15 +1,21 @@
 ﻿# Hunter Trading Deployment
 
-Ø§Ø±ÙØ¹ Ù…Ø­ØªÙˆÙŠØ§Øª Ù…Ø¬Ù„Ø¯ `public_html` Ø¥Ù„Ù‰ `public_html` ÙÙŠ Ø§Ù„Ø§Ø³ØªØ¶Ø§ÙØ©.
+This is a single-client trading services website. It is not a SaaS product or a multi-tenant platform.
 
-Ø§Ù„Ø®Ø·ÙˆØ§Øª:
-1. Ø§Ø³ØªÙˆØ±Ø¯ Ù…Ù„Ù `schema.sql` ÙÙŠ Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª.
-2. Ø§Ù†Ø³Ø® `.env.production.example` Ø¥Ù„Ù‰ `.env` Ø¯Ø§Ø®Ù„ `public_html/api/../../` Ø£Ùˆ Ø¯Ø§Ø®Ù„ Ø¬Ø°Ø± Ø§Ù„Ù…Ø´Ø±ÙˆØ¹ Ø§Ù„Ù…Ø±ÙÙˆØ¹ Ø¨Ø¬ÙˆØ§Ø± `api` ÙˆØ§Ù…Ù„Ø£ Ø¨ÙŠØ§Ù†Ø§Øª Ù‚Ø§Ø¹Ø¯Ø© Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª.
-3. ØªØ£ÙƒØ¯ Ø£Ù† PHP Ùˆ MySQL Ù…ÙØ¹Ù‘Ù„Ø§Ù† Ø¹Ù„Ù‰ Ø§Ù„Ø§Ø³ØªØ¶Ø§ÙØ©.
-4. ØªØ£ÙƒØ¯ Ø£Ù† Ù…Ø¬Ù„Ø¯ `uploads` Ù‚Ø§Ø¨Ù„ Ù„Ù„ÙƒØªØ§Ø¨Ø©.
+Upload the contents of `public_html` to the hosting account's `public_html` directory.
 
-Ù…Ø­ØªÙˆÙŠØ§Øª Ø§Ù„Ø±ÙØ¹:
-- `public_html/` : Ù…Ù„ÙØ§Øª Ø§Ù„Ù…ÙˆÙ‚Ø¹ ÙˆØ§Ù„Ù€ API ÙˆØ§Ù„Ø±ÙØ¹.
-- `schema.sql` : Ø¥Ù†Ø´Ø§Ø¡ Ø§Ù„Ø¬Ø¯Ø§ÙˆÙ„.
-- `migrations/` : ØªØ­Ø¯ÙŠØ«Ø§Øª ÙŠØ¯ÙˆÙŠØ© Ø¢Ù…Ù†Ø© Ù„Ù‚ÙˆØ§Ø¹Ø¯ Ø§Ù„Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ù…ÙˆØ¬ÙˆØ¯Ø©.
-- `.env.production.example` : Ù…Ø«Ø§Ù„ Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¥Ù†ØªØ§Ø¬.
+Steps:
+1. For a new database, import `schema.sql`.
+2. For an existing database, run the files under `migrations/` in order before opening the website to visitors.
+3. Copy `.env.production.example` to `.env` beside the uploaded `api` directory, then fill in `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, and `TWELVE_DATA_API_KEY` if live market data is needed.
+4. Set `CORS_ALLOWED_ORIGINS` to the real website domain, for example `https://example.com`.
+5. Confirm PHP and MySQL are enabled on the hosting account.
+6. Confirm `uploads` is writable and `uploads/.htaccess` exists to block PHP execution inside uploaded files.
+7. Verify hosting upload limits such as `upload_max_filesize` and `post_max_size` are large enough for service images and videos.
+8. Log in with the temporary admin account, then change the password immediately before client delivery or production use.
+
+Package contents:
+- `public_html/`: website files, API, and uploads.
+- `schema.sql`: fresh database schema.
+- `migrations/`: safe manual migrations for existing databases.
+- `.env.production.example`: production env example with placeholder values only.

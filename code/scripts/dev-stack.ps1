@@ -8,7 +8,8 @@ $ErrorActionPreference = 'Stop'
 $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $apiProcess = $null
 $viteExitCode = 0
-$apiBaseUrl = 'http://127.0.0.1:8000'
+$apiPort = if ($env:HUNTER_API_PORT) { [int]$env:HUNTER_API_PORT } else { 8000 }
+$apiBaseUrl = "http://127.0.0.1:$apiPort"
 
 function Write-DevLine {
     param(
@@ -110,13 +111,14 @@ try {
     Start-Sleep -Milliseconds 500
 
     Write-DevLine 'dev' "Starting PHP API server on $apiBaseUrl"
-    $apiProcess = Start-Process php -ArgumentList '-S', '127.0.0.1:8000', 'router.php' -WorkingDirectory $projectRoot -PassThru -WindowStyle Hidden
+    $apiProcess = Start-Process php -ArgumentList '-S', "127.0.0.1:$apiPort", 'router.php' -WorkingDirectory $projectRoot -PassThru -WindowStyle Hidden
 
     if (-not (Wait-ForApi)) {
         throw 'API server did not become ready on port 8000.'
     }
 
     Write-DevLine 'dev' 'Starting Vite dev server'
+    $env:VITE_API_PROXY_TARGET = $apiBaseUrl
     & npm.cmd 'run' 'dev:web' '--' @ViteArgs
     $viteExitCode = $LASTEXITCODE
 } finally {

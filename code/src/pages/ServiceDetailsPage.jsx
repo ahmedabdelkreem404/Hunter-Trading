@@ -10,8 +10,10 @@ function isVideoUrl(url = '') {
 }
 
 function ServiceMediaViewer({ service, title }) {
-  const explicitMediaUrl = service.cover_url || service.card_media_url || ''
-  const mediaType = service.cover_media_type || service.card_media_type || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
+  const hasCoverMedia = Boolean(service.cover_url)
+  const explicitMediaUrl = hasCoverMedia ? service.cover_url : service.card_media_url || ''
+  const explicitMediaType = hasCoverMedia ? service.cover_media_type : service.card_media_type
+  const mediaType = explicitMediaType || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
   const fallbackImageUrl = service.thumbnail_url || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
   const posterUrl = service.cover_video_poster_url || service.card_video_poster_url || service.thumbnail_url || ''
