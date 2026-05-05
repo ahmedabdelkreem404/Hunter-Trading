@@ -1,0 +1,298 @@
+import { useRef } from 'react'
+import { useTranslation } from 'react-i18next'
+import { motion, useInView } from 'framer-motion'
+import { Award, Users, TrendingUp, Globe } from 'lucide-react'
+import { coachAPI, sectionSettingsAPI } from '../../api'
+import { useTheme } from '../../contexts/ThemeContext'
+import useApiData from '../../hooks/useApiData'
+
+const LIVE_REFRESH_INTERVAL = 15000
+
+const fallbackProfile = {
+  name_en: 'Ahmed Hunter',
+  name_ar: 'أحمد هانتر',
+  title_en: 'Professional Trading Coach',
+  title_ar: 'مدرب تداول محترف',
+  bio_intro: 'After losing $50,000 in my first year of trading, I decided to dedicate my life to mastering the markets.',
+  bio_success: 'Now I help thousands of traders achieve financial freedom through proven strategies and mentorship.',
+  image_url: null,
+  experience_years: 8,
+  students_count: '10,000+',
+  profit_shared: '$2M+',
+  social_links: [],
+}
+
+function TelegramIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M21.94 4.62a1.5 1.5 0 0 0-1.62-.24L3.2 11.28a1.5 1.5 0 0 0 .1 2.82l4.2 1.4 1.4 4.2a1.5 1.5 0 0 0 2.82.1l6.9-17.12a1.5 1.5 0 0 0-.68-2.06ZM9.4 14.6l-.82 3.1-.96-2.88 8.7-6.46-6.92 6.24Z" />
+    </svg>
+  )
+}
+
+function InstagramIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" aria-hidden="true" {...props}>
+      <rect x="3.25" y="3.25" width="17.5" height="17.5" rx="5" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="12" cy="12" r="4.2" stroke="currentColor" strokeWidth="1.8" />
+      <circle cx="17.35" cy="6.65" r="1.15" fill="currentColor" />
+    </svg>
+  )
+}
+
+function YouTubeIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M21.58 7.19a2.95 2.95 0 0 0-2.08-2.08C17.72 4.6 12 4.6 12 4.6s-5.72 0-7.5.51A2.95 2.95 0 0 0 2.42 7.2 30.2 30.2 0 0 0 1.9 12c0 1.63.17 3.24.52 4.8a2.95 2.95 0 0 0 2.08 2.08c1.78.51 7.5.51 7.5.51s5.72 0 7.5-.51a2.95 2.95 0 0 0 2.08-2.08c.35-1.56.52-3.17.52-4.8 0-1.63-.17-3.24-.52-4.81ZM10.1 15.69V8.31L16.5 12l-6.4 3.69Z" />
+    </svg>
+  )
+}
+
+function FacebookIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M13.82 21v-7.24h2.43l.36-2.82h-2.8V9.13c0-.82.22-1.38 1.39-1.38H16.7V5.22c-.72-.08-1.45-.12-2.17-.12-2.15 0-3.62 1.31-3.62 3.73v2.1H8.5v2.82h2.41V21h2.91Z" />
+    </svg>
+  )
+}
+
+function XIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M18.9 2H22l-6.77 7.74L23 22h-6.1l-4.78-6.8L6.16 22H3.05l7.24-8.28L1 2h6.24l4.33 6.17L18.9 2Zm-1.07 18.16h1.72L6.3 3.74H4.45l13.38 16.42Z" />
+    </svg>
+  )
+}
+
+function LinkedInIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M6.94 8.5H3.56V20h3.38V8.5ZM5.25 3A1.96 1.96 0 1 0 5.3 6.92 1.96 1.96 0 0 0 5.25 3ZM20.44 13.02c0-3.47-1.85-5.08-4.32-5.08-1.99 0-2.88 1.1-3.37 1.87V8.5H9.38c.04.86 0 11.5 0 11.5h3.37v-6.42c0-.34.02-.68.12-.92.27-.68.88-1.39 1.9-1.39 1.34 0 1.88 1.02 1.88 2.52V20H20V13.02h.44Z" />
+    </svg>
+  )
+}
+
+function WhatsAppIcon(props) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true" {...props}>
+      <path d="M20.52 3.48A11.84 11.84 0 0 0 12.06 0C5.6 0 .34 5.25.34 11.72c0 2.06.54 4.07 1.56 5.84L0 24l6.61-1.73a11.67 11.67 0 0 0 5.45 1.39h.01c6.46 0 11.72-5.26 11.72-11.72 0-3.13-1.22-6.07-3.47-8.46Zm-8.46 18.2h-.01a9.73 9.73 0 0 1-4.95-1.35l-.35-.21-3.92 1.03 1.05-3.82-.23-.39a9.72 9.72 0 0 1-1.5-5.2c0-5.37 4.37-9.75 9.76-9.75 2.6 0 5.03 1 6.87 2.85a9.67 9.67 0 0 1 2.86 6.9c0 5.38-4.38 9.76-9.58 9.94Zm5.35-7.3c-.29-.14-1.73-.85-2-.95-.27-.1-.47-.14-.67.14-.2.29-.76.95-.94 1.14-.17.2-.34.22-.63.08-.29-.14-1.2-.44-2.29-1.4a8.53 8.53 0 0 1-1.58-1.97c-.17-.29-.02-.45.12-.59.13-.13.29-.34.43-.51.14-.17.19-.29.29-.49.1-.2.05-.37-.02-.51-.07-.15-.67-1.61-.92-2.2-.24-.57-.48-.49-.67-.5h-.57c-.2 0-.51.07-.78.37-.27.29-1.03 1.01-1.03 2.46s1.06 2.86 1.21 3.05c.14.2 2.08 3.18 5.03 4.46.7.3 1.25.48 1.68.61.71.23 1.36.2 1.88.12.57-.08 1.73-.71 1.97-1.4.24-.7.24-1.29.17-1.4-.07-.12-.27-.2-.56-.34Z" />
+    </svg>
+  )
+}
+
+const socialIconMap = {
+  telegram: TelegramIcon,
+  instagram: InstagramIcon,
+  youtube: YouTubeIcon,
+  facebook: FacebookIcon,
+  twitter: XIcon,
+  x: XIcon,
+  linkedin: LinkedInIcon,
+  whatsapp: WhatsAppIcon,
+}
+
+const selectCoach = (response) => {
+  if (!response.data) {
+    return fallbackProfile
+  }
+
+  return {
+    ...fallbackProfile,
+    ...response.data,
+    bio_intro: response.data.bio_en || fallbackProfile.bio_intro,
+    bio_success: response.data.bio_en || fallbackProfile.bio_success,
+    students_count: response.data.students_count ? `${Number(response.data.students_count).toLocaleString()}+` : fallbackProfile.students_count,
+    social_links: Array.isArray(response.data.social_links) ? response.data.social_links : [],
+  }
+}
+
+export default function Coach() {
+  const { t, i18n } = useTranslation()
+  const { isDarkMode } = useTheme()
+  const ref = useRef(null)
+  const isInView = useInView(ref, { once: true, margin: '-100px' })
+  const { data: coachProfile } = useApiData(
+    coachAPI.getProfile,
+    fallbackProfile,
+    selectCoach,
+    [],
+    { refreshInterval: LIVE_REFRESH_INTERVAL }
+  )
+  const { data: sections } = useApiData(
+    sectionSettingsAPI.getPublic,
+    [],
+    (response) => response.data ?? [],
+    [],
+    { refreshInterval: LIVE_REFRESH_INTERVAL }
+  )
+
+  const isArabic = i18n.language === 'ar'
+  const coachName = isArabic ? coachProfile.name_ar : coachProfile.name_en
+  const coachTitle = isArabic ? coachProfile.title_ar : coachProfile.title_en
+  const coachSection = sections.find((section) => section.section_key === 'coach') ?? {}
+  const socialLinks = Array.isArray(coachProfile.social_links) ? coachProfile.social_links.filter((link) => link?.url) : []
+
+  const coachStats = [
+    { icon: Award, value: coachProfile.experience_years, label: t('coach.experience'), suffix: '+' },
+    { icon: Users, value: coachProfile.students_count, label: t('coach.students'), suffix: '' },
+    { icon: TrendingUp, value: coachProfile.profit_shared, label: t('coach.profit_shared'), suffix: '' },
+  ]
+
+  return (
+    <section id="coach" className="py-20 md:py-32 bg-hunter-card relative overflow-hidden" ref={ref}>
+      <div className="absolute inset-0 opacity-5">
+        <div className="absolute top-0 left-0 w-96 h-96 bg-hunter-green rounded-full blur-3xl" />
+        <div className="absolute bottom-0 right-0 w-96 h-96 bg-hunter-blue rounded-full blur-3xl" />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          animate={isInView ? { opacity: 1, y: 0 } : {}}
+          transition={{ duration: 0.6 }}
+          className="text-center mb-16"
+        >
+          <h2 className="section-title">{(isArabic ? coachSection.title_ar : coachSection.title_en) || t('coach.title')}</h2>
+        </motion.div>
+
+        <div className="grid gap-10 lg:grid-cols-2 lg:gap-12 items-center">
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.6 }}
+            className="relative"
+          >
+            <div className="relative mx-auto w-full max-w-[34rem] [perspective:2200px]">
+              <div className="absolute inset-14 rounded-[3rem] bg-hunter-gradient blur-[120px] opacity-20" />
+              <div className="absolute -top-10 -left-10 h-40 w-40 rounded-full bg-hunter-green/20 blur-3xl" />
+              <div className="absolute top-1/3 -right-8 h-44 w-44 rounded-full bg-hunter-blue/20 blur-3xl" />
+              <div className="absolute -bottom-8 left-1/2 h-32 w-52 -translate-x-1/2 rounded-full bg-black/35 blur-3xl" />
+
+              <motion.div
+                initial={{ opacity: 0, y: 28, scale: 0.97 }}
+                animate={isInView ? { opacity: 1, y: 0, scale: 1 } : {}}
+                whileHover={{ y: -4 }}
+                transition={{ duration: 0.7, ease: 'easeOut' }}
+                className="relative"
+              >
+                <div className={`relative overflow-hidden rounded-[2.5rem] shadow-[0_45px_120px_rgba(0,0,0,0.18)] ${
+                  isDarkMode
+                    ? 'bg-[linear-gradient(160deg,rgba(18,26,34,0.98),rgba(9,14,22,0.94))]'
+                    : 'bg-[linear-gradient(160deg,rgba(255,255,255,0.98),rgba(240,246,255,0.95))] ring-1 ring-slate-200/80'
+                }`}>
+                  <div className={`absolute inset-0 ${
+                    isDarkMode
+                      ? 'bg-[radial-gradient(circle_at_top,rgba(35,210,153,0.18),transparent_32%),radial-gradient(circle_at_bottom_right,rgba(35,101,255,0.14),transparent_34%)]'
+                      : 'bg-[radial-gradient(circle_at_top,rgba(35,210,153,0.12),transparent_34%),radial-gradient(circle_at_bottom_right,rgba(35,101,255,0.10),transparent_34%)]'
+                  }`} />
+                  <div className={`absolute inset-x-0 top-0 h-24 ${
+                    isDarkMode ? 'bg-gradient-to-b from-white/8 to-transparent' : 'bg-gradient-to-b from-white/80 to-transparent'
+                  }`} />
+                  <div className="relative p-4 sm:p-6 lg:p-7">
+                    {coachProfile.image_url ? (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.96, y: 20 }}
+                        animate={isInView ? { opacity: 1, scale: 1, y: 0 } : {}}
+                        transition={{ duration: 0.85, delay: 0.12 }}
+                        className={`relative overflow-hidden rounded-[2rem] ${isDarkMode ? 'shadow-[0_30px_90px_rgba(0,0,0,0.34)]' : 'shadow-[0_24px_60px_rgba(15,23,42,0.16)] ring-1 ring-slate-200/80'}`}
+                      >
+                        <div className={`absolute inset-0 z-10 ${
+                          isDarkMode
+                            ? 'bg-[linear-gradient(180deg,rgba(255,255,255,0.08),transparent_18%,transparent_60%,rgba(4,7,11,0.34)_100%)]'
+                            : 'bg-[linear-gradient(180deg,rgba(255,255,255,0.18),transparent_16%,transparent_65%,rgba(148,163,184,0.18)_100%)]'
+                        }`} />
+                        <img
+                          src={coachProfile.image_url}
+                          alt={coachName}
+                          className="h-[22rem] w-full object-cover object-center sm:h-[28rem] lg:h-[34rem]"
+                        />
+                      </motion.div>
+                    ) : (
+                      <div className="flex h-[22rem] items-center justify-center rounded-[2rem] bg-hunter-gradient sm:h-[28rem] lg:h-[34rem]">
+                        <span className="text-8xl font-heading font-bold text-hunter-bg">
+                          {coachName.charAt(0)}
+                        </span>
+                      </div>
+                    )}
+
+                    <div className="pt-5 text-center sm:pt-6">
+                      <h3 className="font-heading text-3xl font-bold text-hunter-text sm:text-4xl lg:text-5xl">{coachName}</h3>
+                      <p className="mt-3 text-base text-hunter-text-muted sm:text-lg lg:text-xl">{coachTitle}</p>
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </div>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, x: 50 }}
+            animate={isInView ? { opacity: 1, x: 0 } : {}}
+            transition={{ duration: 0.6, delay: 0.2 }}
+            className="space-y-6"
+          >
+            <p className="text-hunter-text text-lg leading-relaxed">
+              {coachProfile.bio_intro}
+            </p>
+
+            <p className="text-hunter-text-muted leading-relaxed">{isArabic ? coachProfile.bio_ar : coachProfile.bio_en}</p>
+
+            <p className="text-hunter-text leading-relaxed">
+              {coachProfile.bio_success}
+            </p>
+
+            <div className="grid grid-cols-1 gap-4 pt-8 sm:grid-cols-3 sm:gap-6">
+              {coachStats.map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={isInView ? { opacity: 1, y: 0 } : {}}
+                  transition={{ duration: 0.4, delay: 0.4 + index * 0.1 }}
+                  className="text-center"
+                >
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-hunter-green/10 mb-3">
+                    <stat.icon className="w-6 h-6 text-hunter-green" />
+                  </div>
+                  <div className="font-heading font-bold text-2xl md:text-3xl text-hunter-green mb-1">
+                    {stat.value}{stat.suffix}
+                  </div>
+                  <div className="text-hunter-text-muted text-sm">
+                    {stat.label}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+
+            {socialLinks.length > 0 && (
+              <div className="pt-8">
+                <div className="flex flex-wrap gap-3">
+                  {socialLinks.map((link, index) => {
+                    const Icon = socialIconMap[(link.platform || '').toLowerCase()] || Globe
+
+                    return (
+                      <motion.a
+                        key={link.id ?? `${link.platform}-${index}`}
+                        initial={{ opacity: 0, y: 16 }}
+                        animate={isInView ? { opacity: 1, y: 0 } : {}}
+                        transition={{ duration: 0.4, delay: 0.75 + index * 0.08 }}
+                        href={link.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 text-sm font-medium text-hunter-text transition hover:-translate-y-0.5 hover:border-hunter-green/40 hover:bg-hunter-green/10"
+                      >
+                        <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-hunter-green/10 text-hunter-green">
+                          <Icon className="h-5 w-5" />
+                        </span>
+                        <span>{link.label || link.platform}</span>
+                      </motion.a>
+                    )
+                  })}
+                </div>
+              </div>
+            )}
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  )
+}

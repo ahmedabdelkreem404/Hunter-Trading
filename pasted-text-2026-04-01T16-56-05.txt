@@ -1,0 +1,286 @@
+**Project Title:**
+Hunter Trading – Premium Trading Education & Affiliate Platform
+
+---
+
+**Project Overview:**
+Build a high-end, modern, and conversion-focused website for a personal trading coach brand called “Hunter Trading”. The platform should combine education, community, and affiliate monetization into a seamless user experience. The main goal is to convert visitors into Telegram subscribers and affiliate referrals (broker sign-ups).
+
+---
+
+**Tech Stack Requirements (STRICT):**
+
+* Backend: Core PHP (NO frameworks like Laravel)
+* Database: MySQL
+* Frontend: React.js
+* 3D & Animations: Three.js (or React Three Fiber)
+* Styling: Tailwind CSS or custom CSS
+* API Communication: REST API (PHP → React)
+
+---
+
+**Main Features & Structure:**
+
+### 1. Home Page (Highly Premium & Animated)
+
+* Fully responsive
+* Dark mode as default + Light mode toggle
+* Multi-language support (Arabic & English)
+
+#### Hero Section:
+
+* Strong headline (conversion-focused)
+* Subheadline with proof (e.g. number of students, years of experience)
+* CTA buttons:
+
+  * Join Telegram
+  * Start Learning
+* Right side:
+
+  * Interactive 3D animation (Trading scene)
+
+#### 3D Animation Requirements:
+
+* Use Three.js
+* Scene includes:
+
+  * Animated candlestick chart
+  * Floating trading data lines
+  * Subtle globe/world rotation
+  * Dynamic profit numbers appearing smoothly
+* Smooth loop animation
+* Lightweight & optimized
+* Optional mouse interaction (parallax or hover effects)
+
+---
+
+### 2. Coach Section (Trust Builder)
+
+* Profile image
+* Years of experience
+* Number of students trained
+* Short storytelling:
+
+  * How the coach started
+  * Struggles and failures
+  * Success journey
+
+---
+
+### 3. Results / Proof Section
+
+* Screenshots of trades (profits/losses)
+* Statistics (win rate, total trades)
+* Video proofs if available
+
+---
+
+### 4. Testimonials Section
+
+* Real user reviews
+* Images and/or videos
+* Slider or carousel UI
+
+---
+
+### 5. Courses / Training Section
+
+* Display available courses:
+
+  * Beginner
+  * Intermediate
+  * Advanced
+* Each course includes:
+
+  * Lessons (videos)
+  * PDFs
+  * Progress tracking
+
+---
+
+### 6. Signals Section
+
+* Display trading signals:
+
+  * Buy / Sell
+  * Entry price
+  * Take Profit (TP)
+  * Stop Loss (SL)
+* Show past results
+
+---
+
+### 7. Affiliate / Broker Page (Monetization Core)
+
+* Explanation of how to start trading
+* Benefits of the broker
+* CTA button with referral link
+* Conversion-focused layout
+
+---
+
+### 8. Social Media & Telegram Integration
+
+* Sticky Telegram button
+* Floating Telegram CTA
+* Social icons:
+
+  * Telegram
+  * Instagram
+  * TikTok
+  * YouTube
+
+---
+
+### 9. Lead Capture System
+
+* Popup form (email / phone)
+* Offer free course or guide in exchange
+* Store leads in database
+
+---
+
+### 10. Blog / SEO Section
+
+* Articles related to trading
+* SEO optimized structure
+
+---
+
+### 11. Legal Disclaimer
+
+* Trading risk disclaimer (mandatory)
+
+---
+
+**Dashboard / Admin Panel (Core System):**
+
+### General Requirements:
+
+* Built with React.js (frontend)
+* PHP API backend
+* Authentication system (login/logout)
+* Role-based access (Admin / Moderator)
+
+---
+
+### Modules:
+
+#### 1. User Management
+
+* View all users
+* Track registrations
+* Track Telegram join status (if applicable)
+
+---
+
+#### 2. Content Management (VERY IMPORTANT)
+
+* Edit homepage text, numbers, images, videos
+* Dynamic content updates without coding
+
+---
+
+#### 3. Courses Management
+
+* Add/edit/delete courses
+* Upload videos & PDFs
+* Manage lessons
+
+---
+
+#### 4. Signals Management
+
+* Add trading signals
+* Update results
+* History tracking
+
+---
+
+#### 5. Testimonials Management
+
+* Add/edit/delete testimonials
+* Upload images/videos
+
+---
+
+#### 6. Media Library
+
+* Centralized storage for images & videos
+
+---
+
+#### 7. Analytics Dashboard
+
+* Visitors count
+* Conversion rate
+* Telegram joins
+* Affiliate clicks
+
+---
+
+#### 8. Affiliate Tracking
+
+* Track referral clicks
+* Track conversions (if possible)
+* Basic reporting
+
+---
+
+#### 9. Notifications System
+
+* Send announcements to users
+* Optional email integration
+
+---
+
+### Advanced Features (Optional but Recommended):
+
+* Drag & Drop homepage builder
+* Landing page builder for ads
+* Live activity feed (e.g. “User joined 2 minutes ago”)
+* Profit calculator tool
+* Quiz: “Find your trading level”
+
+---
+
+**UI/UX Guidelines:**
+
+* Premium, modern SaaS design
+* Dark theme focused (trading style)
+* Smooth animations (not excessive)
+* Clear CTA buttons
+* Mobile-first design
+
+---
+
+**Performance Requirements:**
+
+* Fast loading speed
+* Optimized 3D assets
+* Lazy loading for media
+* Clean API structure
+
+---
+
+**Security Requirements:**
+
+* Input validation (PHP)
+* SQL injection protection
+* Authentication & session security
+
+---
+
+**Goal of the Platform:**
+Create a conversion-focused system that:
+
+1. Attracts users
+2. Builds trust
+3. Converts them into Telegram members
+4. Drives them to register via affiliate links
+5. Generates continuous revenue
+
+---
+
+**Important Note:**
+The design and experience must feel like a high-end fintech/trading brand, not a basic website.
