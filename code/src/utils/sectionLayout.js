@@ -1,13 +1,13 @@
 export const HOMEPAGE_SECTION_DEFINITIONS = [
-  { id: 'hero', sectionKey: 'hero', label: 'الرئيسية', anchor: 'home', showInNav: true },
-  { id: 'funded', sectionKey: 'funded', label: 'الحسابات الممولة', anchor: 'funded', showInNav: true },
-  { id: 'vip', sectionKey: 'vip', label: 'VIP', anchor: 'vip', showInNav: true },
-  { id: 'coach', sectionKey: 'coach', label: 'المدرب', anchor: 'coach', showInNav: false },
-  { id: 'testimonials', sectionKey: 'testimonials', label: 'آراء الطلاب', anchor: 'testimonials', showInNav: false },
-  { id: 'market', sectionKey: 'market', label: 'تابع السوق', anchor: 'market', showInNav: false },
-  { id: 'scalp', sectionKey: 'scalp', label: 'Scalp', anchor: 'scalp', showInNav: true },
-  { id: 'courses', sectionKey: 'courses', label: 'كورسات تعليمية', anchor: 'courses', showInNav: true },
-  { id: 'offers', sectionKey: 'offers', label: 'العروض', anchor: 'offers', showInNav: true },
+  { id: 'hero', sectionKey: 'hero', label_en: 'Home', label_ar: 'الرئيسية', label: 'Home', anchor: 'home', showInNav: true },
+  { id: 'funded', sectionKey: 'funded', label_en: 'Funded Accounts', label_ar: 'الحسابات الممولة', label: 'Funded Accounts', anchor: 'funded', showInNav: true },
+  { id: 'vip', sectionKey: 'vip', label_en: 'VIP', label_ar: 'VIP', label: 'VIP', anchor: 'vip', showInNav: true },
+  { id: 'coach', sectionKey: 'coach', label_en: 'Coach', label_ar: 'المدرب', label: 'Coach', anchor: 'coach', showInNav: false },
+  { id: 'testimonials', sectionKey: 'testimonials', label_en: 'Testimonials', label_ar: 'آراء العملاء', label: 'Testimonials', anchor: 'testimonials', showInNav: false },
+  { id: 'market', sectionKey: 'market', label_en: 'Market Watch', label_ar: 'تابع السوق', label: 'Market Watch', anchor: 'market', showInNav: false },
+  { id: 'scalp', sectionKey: 'scalp', label_en: 'Scalp', label_ar: 'سكالب', label: 'Scalp', anchor: 'scalp', showInNav: true },
+  { id: 'courses', sectionKey: 'courses', label_en: 'Courses', label_ar: 'الدورات', label: 'Courses', anchor: 'courses', showInNav: true },
+  { id: 'offers', sectionKey: 'offers', label_en: 'Offers', label_ar: 'العروض', label: 'Offers', anchor: 'offers', showInNav: true },
 ]
 
 export const DEFAULT_HOMEPAGE_LAYOUT = HOMEPAGE_SECTION_DEFINITIONS.map((section, index) => ({

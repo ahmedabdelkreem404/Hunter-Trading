@@ -5,6 +5,14 @@ import useApiData from '../../hooks/useApiData'
 import SocialBrandIcon, { buildSocialLinksFromSettings, getSocialBrand, normalizeSocialUrl } from '../ui/SocialBrandIcon'
 
 const LIVE_REFRESH_INTERVAL = 0
+const ARABIC_MENU_LABELS = {
+  '#home': 'الرئيسية',
+  '#funded': 'الحسابات الممولة',
+  '#vip': 'VIP',
+  '#scalp': 'سكالب',
+  '#courses': 'الدورات',
+  '#offers': 'العروض',
+}
 
 function normalizeLinks(items = [], fallback = [], currentLanguage = 'en') {
   if (Array.isArray(items) && items.length > 0) {
@@ -12,7 +20,9 @@ function normalizeLinks(items = [], fallback = [], currentLanguage = 'en') {
       .filter((item) => item?.is_visible !== false)
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
       .map((item) => ({
-        name: currentLanguage === 'ar' ? item.label_ar || item.label_en : item.label_en || item.label_ar,
+        name: currentLanguage === 'ar'
+          ? ARABIC_MENU_LABELS[item.href] || item.label_ar || item.label_en
+          : item.label_en || item.label_ar,
         href: item.href || '#home',
         newTab: !!item.new_tab,
       }))
@@ -33,21 +43,31 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
   )
   const general = settings.general ?? {}
   const currentLanguage = i18n.language
+  const getSectionLabel = (section) => (
+    currentLanguage === 'ar' ? section.label_ar || section.label : section.label_en || section.label
+  )
+  const getLocalizedSetting = (key, fallback = '') => {
+    if (currentLanguage === 'ar') {
+      return general[`${key}_ar`]?.value || general[key]?.value || general[`${key}_en`]?.value || fallback
+    }
+
+    return general[`${key}_en`]?.value || fallback
+  }
   const defaultQuickLinks = [
     { name: currentLanguage === 'ar' ? 'الرئيسية' : 'Home', href: `#${homeAnchor}`, newTab: false },
-    ...quickSections.filter((section) => section.id !== 'hero').map((section) => ({ name: section.label, href: `#${section.anchor}`, newTab: false })),
+    ...quickSections.filter((section) => section.id !== 'hero').map((section) => ({ name: getSectionLabel(section), href: `#${section.anchor}`, newTab: false })),
   ].slice(0, 4)
   const quickLinks = normalizeLinks(footerSettings.quick_links || [], defaultQuickLinks, currentLanguage)
   const legalFallback = [
-    { name: general.privacy_policy_title?.value || t('footer.privacy'), href: '/privacy-policy', newTab: false },
-    { name: general.terms_title?.value || t('footer.terms'), href: '/terms-and-conditions', newTab: false },
-    { name: general.risk_disclaimer_title?.value || t('footer.disclaimer'), href: '/risk-disclaimer', newTab: false },
+    { name: getLocalizedSetting('privacy_policy_title', t('footer.privacy')), href: '/privacy-policy', newTab: false },
+    { name: getLocalizedSetting('terms_title', t('footer.terms')), href: '/terms-and-conditions', newTab: false },
+    { name: getLocalizedSetting('risk_disclaimer_title', t('footer.disclaimer')), href: '/risk-disclaimer', newTab: false },
   ]
   const legalItems = normalizeLinks(footerSettings.legal_links || [], legalFallback, currentLanguage)
   const siteLogo = general.site_logo?.value || ''
-  const footerDescription = general.footer_description?.value || t('footer.description')
-  const riskWarningTitle = general.risk_warning_title?.value || t('footer.disclaimer')
-  const riskWarningContent = general.risk_warning_content?.value || ''
+  const footerDescription = getLocalizedSetting('footer_description', t('footer.description'))
+  const riskWarningTitle = getLocalizedSetting('risk_warning_title', t('footer.disclaimer'))
+  const riskWarningContent = getLocalizedSetting('risk_warning_content', '')
 
   const socialLinks = buildSocialLinksFromSettings(general)
 

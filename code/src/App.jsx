@@ -104,13 +104,9 @@ function AppContent() {
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang)
     localStorage.setItem('language', lang)
-    document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'
-    document.documentElement.lang = lang
   }
 
   useEffect(() => {
-    document.documentElement.dir = i18n.language === 'ar' ? 'rtl' : 'ltr'
-    document.documentElement.lang = i18n.language
     setTimeout(() => setIsLoading(false), 1000)
   }, [i18n.language])
 

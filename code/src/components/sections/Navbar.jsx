@@ -7,6 +7,14 @@ import useApiData from '../../hooks/useApiData'
 import { useTheme } from '../../contexts/ThemeContext'
 
 const LIVE_REFRESH_INTERVAL = 0
+const ARABIC_MENU_LABELS = {
+  '#home': 'الرئيسية',
+  '#funded': 'الحسابات الممولة',
+  '#vip': 'VIP',
+  '#scalp': 'سكالب',
+  '#courses': 'الدورات',
+  '#offers': 'العروض',
+}
 
 const TelegramIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -20,7 +28,9 @@ function normalizeMenuItems(menuItems = [], fallbackLinks = [], currentLanguage 
       .filter((item) => item?.is_visible !== false)
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
       .map((item) => ({
-        name: currentLanguage === 'ar' ? item.label_ar || item.label_en : item.label_en || item.label_ar,
+        name: currentLanguage === 'ar'
+          ? ARABIC_MENU_LABELS[item.href] || item.label_ar || item.label_en
+          : item.label_en || item.label_ar,
         href: item.href || '#home',
         newTab: !!item.new_tab,
       }))
@@ -51,7 +61,11 @@ export default function Navbar({
   const websiteName = settings.general?.website_name?.value || 'Hunter Trading'
   const siteLogo = settings.general?.site_logo?.value || ''
   const telegramUrl = settings.general?.telegram_url?.value || settings.general?.free_telegram_url?.value || 'https://t.me/hunter_tradeing'
-  const defaultLinks = navSections.map((section) => ({ name: section.label, href: `#${section.anchor}`, newTab: false }))
+  const defaultLinks = navSections.map((section) => ({
+    name: currentLanguage === 'ar' ? section.label_ar || section.label : section.label_en || section.label,
+    href: `#${section.anchor}`,
+    newTab: false,
+  }))
   const navLinks = useMemo(
     () => normalizeMenuItems(navigationSettings.menu_items || [], defaultLinks, currentLanguage),
     [navigationSettings.menu_items, defaultLinks, currentLanguage]

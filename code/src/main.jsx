@@ -2,8 +2,9 @@ import React, { Suspense, lazy } from 'react'
 import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import App from './App'
-import './index.css'
+import LanguageDirectionSync from './components/ui/LanguageDirectionSync'
 import './i18n'
+import './index.css'
 
 const AdminApp = lazy(() => import('./pages/admin/AdminApp'))
 const AdminLogin = lazy(() => import('./pages/admin/Login'))
@@ -22,6 +23,7 @@ function RouteLoader() {
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <LanguageDirectionSync />
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Suspense fallback={<RouteLoader />}>
         <Routes>

@@ -51,13 +51,20 @@ export default function SettingsModule({ settings, setSettings, siteLogoFile, se
 
       <SectionCard title="القانوني والفوتر">
         <div className="grid gap-4">
-          <Field label="عنوان سياسة الخصوصية" value={settings.privacy_policy_title || ''} onChange={(e) => setSettings((current) => ({ ...current, privacy_policy_title: e.target.value }))} />
-          <TextArea label="محتوى سياسة الخصوصية" value={settings.privacy_policy_content || ''} onChange={(e) => setSettings((current) => ({ ...current, privacy_policy_content: e.target.value }))} />
-          <Field label="عنوان الشروط والأحكام" value={settings.terms_title || ''} onChange={(e) => setSettings((current) => ({ ...current, terms_title: e.target.value }))} />
-          <TextArea label="محتوى الشروط والأحكام" value={settings.terms_content || ''} onChange={(e) => setSettings((current) => ({ ...current, terms_content: e.target.value }))} />
-          <Field label="عنوان التحذير" value={settings.risk_warning_title || ''} onChange={(e) => setSettings((current) => ({ ...current, risk_warning_title: e.target.value }))} />
-          <TextArea label="محتوى التحذير" value={settings.risk_warning_content || ''} onChange={(e) => setSettings((current) => ({ ...current, risk_warning_content: e.target.value }))} />
-          <TextArea label="وصف الفوتر" value={settings.footer_description || ''} onChange={(e) => setSettings((current) => ({ ...current, footer_description: e.target.value }))} />
+          <Field label="عنوان سياسة الخصوصية بالعربية" value={settings.privacy_policy_title_ar || settings.privacy_policy_title || ''} onChange={(e) => setSettings((current) => ({ ...current, privacy_policy_title_ar: e.target.value }))} />
+          <Field label="عنوان سياسة الخصوصية بالإنجليزية" value={settings.privacy_policy_title_en || ''} onChange={(e) => setSettings((current) => ({ ...current, privacy_policy_title_en: e.target.value }))} />
+          <TextArea label="محتوى سياسة الخصوصية بالعربية" value={settings.privacy_policy_content_ar || settings.privacy_policy_content || ''} onChange={(e) => setSettings((current) => ({ ...current, privacy_policy_content_ar: e.target.value }))} />
+          <TextArea label="محتوى سياسة الخصوصية بالإنجليزية" value={settings.privacy_policy_content_en || ''} onChange={(e) => setSettings((current) => ({ ...current, privacy_policy_content_en: e.target.value }))} />
+          <Field label="عنوان الشروط والأحكام بالعربية" value={settings.terms_title_ar || settings.terms_title || ''} onChange={(e) => setSettings((current) => ({ ...current, terms_title_ar: e.target.value }))} />
+          <Field label="عنوان الشروط والأحكام بالإنجليزية" value={settings.terms_title_en || ''} onChange={(e) => setSettings((current) => ({ ...current, terms_title_en: e.target.value }))} />
+          <TextArea label="محتوى الشروط والأحكام بالعربية" value={settings.terms_content_ar || settings.terms_content || ''} onChange={(e) => setSettings((current) => ({ ...current, terms_content_ar: e.target.value }))} />
+          <TextArea label="محتوى الشروط والأحكام بالإنجليزية" value={settings.terms_content_en || ''} onChange={(e) => setSettings((current) => ({ ...current, terms_content_en: e.target.value }))} />
+          <Field label="عنوان تحذير المخاطر بالعربية" value={settings.risk_disclaimer_title_ar || settings.risk_warning_title_ar || settings.risk_warning_title || ''} onChange={(e) => setSettings((current) => ({ ...current, risk_disclaimer_title_ar: e.target.value, risk_warning_title_ar: e.target.value }))} />
+          <Field label="عنوان تحذير المخاطر بالإنجليزية" value={settings.risk_disclaimer_title_en || settings.risk_warning_title_en || ''} onChange={(e) => setSettings((current) => ({ ...current, risk_disclaimer_title_en: e.target.value, risk_warning_title_en: e.target.value }))} />
+          <TextArea label="محتوى تحذير المخاطر بالعربية" value={settings.risk_disclaimer_content_ar || settings.risk_warning_content_ar || settings.risk_warning_content || ''} onChange={(e) => setSettings((current) => ({ ...current, risk_disclaimer_content_ar: e.target.value, risk_warning_content_ar: e.target.value }))} />
+          <TextArea label="محتوى تحذير المخاطر بالإنجليزية" value={settings.risk_disclaimer_content_en || settings.risk_warning_content_en || ''} onChange={(e) => setSettings((current) => ({ ...current, risk_disclaimer_content_en: e.target.value, risk_warning_content_en: e.target.value }))} />
+          <TextArea label="وصف الفوتر بالعربية" value={settings.footer_description_ar || settings.footer_description || ''} onChange={(e) => setSettings((current) => ({ ...current, footer_description_ar: e.target.value }))} />
+          <TextArea label="وصف الفوتر بالإنجليزية" value={settings.footer_description_en || ''} onChange={(e) => setSettings((current) => ({ ...current, footer_description_en: e.target.value }))} />
         </div>
       </SectionCard>
     </>

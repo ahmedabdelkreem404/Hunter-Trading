@@ -7,7 +7,12 @@ $requestUri = $_SERVER['REQUEST_URI'];
 $requestMethod = $_SERVER['REQUEST_METHOD'];
 
 $path = parse_url($requestUri, PHP_URL_PATH);
-$path = preg_replace('#^/api/?#', '', $path ?? '');
+$apiPos = strpos($path ?? '', '/api');
+if ($apiPos !== false) {
+    $path = substr($path, $apiPos + 4);
+} else {
+    $path = preg_replace('#^/api/?#', '', $path ?? '');
+}
 $path = trim($path, '/');
 
 function jsonBody(): array

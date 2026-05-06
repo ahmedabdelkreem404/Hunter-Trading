@@ -253,8 +253,8 @@ function ScalpDetailsLayout({ service, content, isArabic }) {
           {isArabic ? 'العودة للرئيسية' : 'Back to home'}
         </Link>
 
-        <section className="mt-12 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center" dir="ltr">
-          <div className="order-2 lg:order-1" dir={isArabic ? 'rtl' : 'ltr'}>
+        <section className="mt-12 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
+          <div className="order-2 lg:order-1">
             <h2 className="text-center font-heading text-2xl font-bold sm:text-3xl">{isArabic ? 'كيف تبدأ' : 'How to start'}</h2>
             <div className="mt-6">
               <ScalpSteps steps={steps} isArabic={isArabic} />
@@ -267,12 +267,12 @@ function ScalpDetailsLayout({ service, content, isArabic }) {
             ) : null}
           </div>
 
-          <div className="order-1 lg:order-2" dir={isArabic ? 'rtl' : 'ltr'}>
-            <div className="mx-auto max-w-2xl text-center lg:text-right">
+          <div className="order-1 lg:order-2">
+            <div className={`mx-auto max-w-2xl text-center ${isArabic ? 'lg:text-right' : 'lg:text-left'}`}>
               <div className="mb-4 inline-flex rounded-full border border-fuchsia-500/20 bg-fuchsia-500/10 px-4 py-1 text-sm font-semibold text-fuchsia-300">
-                Scalp
+                {isArabic ? 'سكالب' : 'Scalp'}
               </div>
-              <h1 className="font-heading text-4xl font-bold sm:text-5xl">{content.title || 'Scalp'}</h1>
+              <h1 className="font-heading text-4xl font-bold sm:text-5xl">{content.title || (isArabic ? 'سكالب' : 'Scalp')}</h1>
               {content.subtitle || content.description ? (
                 <p className="mt-5 text-lg leading-9 text-hunter-text-muted">
                   {content.subtitle || content.description}
