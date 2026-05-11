@@ -20,7 +20,7 @@ const WhatsAppIcon = () => (
 
 export default function TelegramFloating() {
   const { t, i18n } = useTranslation()
-  const [isFooterVisible, setIsFooterVisible] = useState(false)
+  const [isSuppressed, setIsSuppressed] = useState(false)
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
     {},
@@ -45,19 +45,35 @@ export default function TelegramFloating() {
   }
 
   useEffect(() => {
-    const footer = document.querySelector('footer')
-    if (!footer || !('IntersectionObserver' in window)) return undefined
+    if (!('IntersectionObserver' in window)) return undefined
 
-    const observer = new IntersectionObserver(
-      ([entry]) => setIsFooterVisible(entry.isIntersecting),
-      { threshold: 0.08 }
-    )
+    const observedElements = [
+      ...document.querySelectorAll('#funded, #vip, #scalp, #courses, #offers, footer'),
+    ]
 
-    observer.observe(footer)
+    if (observedElements.length === 0) return undefined
+
+    const visibleElements = new Set()
+
+    const observer = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) {
+          visibleElements.add(entry.target)
+        } else {
+          visibleElements.delete(entry.target)
+        }
+      })
+      setIsSuppressed(visibleElements.size > 0)
+    }, {
+      rootMargin: '-72px 0px -18% 0px',
+      threshold: 0.1,
+    })
+
+    observedElements.forEach((element) => observer.observe(element))
     return () => observer.disconnect()
   }, [])
 
-  if (isFooterVisible) {
+  if (isSuppressed) {
     return null
   }
 
