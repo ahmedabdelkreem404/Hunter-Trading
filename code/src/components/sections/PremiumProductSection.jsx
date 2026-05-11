@@ -96,7 +96,7 @@ function ProductCardMedia({ product, title, compact = false }) {
   const mediaType = product.card_media_type || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
   const fallbackImageUrl = product.thumbnail_url || product.cover_url || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
-  const mediaClassName = 'aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.02]'
+  const mediaClassName = 'aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:aspect-[16/10]'
 
   if (mediaType === 'video' && explicitMediaUrl) {
     return (
@@ -118,7 +118,7 @@ function ProductCardMedia({ product, title, compact = false }) {
       <iframe
         src={explicitMediaUrl}
         title={title}
-        className="aspect-[16/10] w-full"
+        className="aspect-[4/3] w-full sm:aspect-[16/10]"
         loading="lazy"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -137,8 +137,8 @@ function ProductCardMedia({ product, title, compact = false }) {
   }
 
   return (
-    <div className="flex aspect-[16/10] w-full items-center justify-center">
-      <Package2 className="h-12 w-12 text-hunter-text sm:h-14 sm:w-14" />
+    <div className="flex aspect-[4/3] w-full items-center justify-center sm:aspect-[16/10]">
+      <Package2 className="h-9 w-9 text-hunter-text sm:h-14 sm:w-14" />
     </div>
   )
 }
@@ -247,18 +247,22 @@ export default function PremiumProductSection({
     if (!showExpandToggle || showAll) return products
     return products.slice(0, 3)
   }, [products, showAll, showExpandToggle])
-  const gridClassName = 'grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3'
+  const gridClassName = 'grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3'
 
   return (
     <section
       id={sectionId}
-      className="relative overflow-hidden bg-hunter-card py-14 md:py-24 xl:py-32"
+      className="relative overflow-hidden border-y border-white/[0.04] bg-hunter-card py-10 sm:py-14 md:py-24 xl:py-28"
       style={{
         '--product-accent': meta.accent,
         '--product-accent-strong': meta.accentStrong,
       }}
     >
       <div className="absolute inset-0">
+        <div
+          className="absolute inset-x-0 top-0 h-px"
+          style={{ background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--product-accent) 42%, transparent), transparent)' }}
+        />
         <div
           className="absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 rounded-full blur-3xl"
           style={{ background: 'color-mix(in srgb, var(--product-accent) 6%, transparent)' }}
@@ -271,7 +275,7 @@ export default function PremiumProductSection({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto mb-10 max-w-3xl text-center md:mb-12"
+          className="mx-auto mb-8 max-w-3xl text-center sm:mb-10 md:mb-12"
         >
           <div className="mb-4 flex justify-center">
             <TopChip icon={Icon}>{badgeLabel}</TopChip>
@@ -306,8 +310,8 @@ export default function PremiumProductSection({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.45, delay: index * 0.06 }}
-                    className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-3.5 shadow-[0_24px_60px_rgba(0,0,0,0.16)] sm:rounded-[2rem] sm:p-4 ${
-                      singleCard ? 'mx-auto w-full max-w-md sm:col-span-2 xl:col-span-1' : ''
+                    className={`group relative h-full overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-2 shadow-[0_18px_44px_rgba(0,0,0,0.18)] sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_60px_rgba(0,0,0,0.16)] ${
+                      singleCard ? 'col-span-2 mx-auto w-full max-w-xs sm:max-w-md xl:col-span-1' : ''
                     }`}
                   >
                     <div
@@ -338,8 +342,8 @@ export default function PremiumProductSection({
                       </>
                     ) : null}
 
-                    <div className="relative z-10 rounded-2xl border border-white/10 bg-[color:var(--bg-secondary)]/55 p-4 sm:rounded-[1.65rem] sm:p-5">
-                      <div className={`mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3 ${isOffers ? 'justify-between' : 'justify-center'}`}>
+                    <div className="relative z-10 flex h-full flex-col rounded-2xl border border-white/10 bg-[color:var(--bg-secondary)]/55 p-2.5 sm:rounded-[1.65rem] sm:p-5">
+                      <div className={`mb-2 flex items-center gap-1.5 sm:mb-4 sm:gap-3 ${isOffers ? 'justify-between' : 'justify-center'}`}>
                         {isOffers ? (
                           <>
                             {product.offer_ends_at ? <OfferCountdown value={product.offer_ends_at} isArabic={isArabic} /> : <div />}
@@ -351,7 +355,7 @@ export default function PremiumProductSection({
                       </div>
 
                       <div
-                        className="relative mb-5 overflow-hidden rounded-2xl border border-white/10 sm:rounded-[1.3rem]"
+                        className="relative mb-3 overflow-hidden rounded-xl border border-white/10 shadow-[0_10px_26px_rgba(0,0,0,0.18)] sm:mb-5 sm:rounded-[1.3rem]"
                         style={{
                           background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 95%, white 5%) 0%, color-mix(in srgb, var(--bg-secondary) 98%, transparent) 100%)',
                         }}
@@ -360,48 +364,48 @@ export default function PremiumProductSection({
                       </div>
 
                       <div className={centerCardContent ? 'text-center' : 'text-center sm:text-start'}>
-                        <h3 className="break-words font-heading text-[1.55rem] font-bold leading-tight text-hunter-text sm:text-2xl">{productTitle}</h3>
+                        <h3 className="break-words font-heading text-[0.98rem] font-bold leading-snug text-hunter-text sm:text-2xl">{productTitle}</h3>
                         {productDescription ? (
-                          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-hunter-text-muted sm:mx-0">
+                          <p className="mx-auto mt-3 hidden max-w-md text-sm leading-7 text-hunter-text-muted sm:block sm:mx-0">
                             {productDescription}
                           </p>
                         ) : null}
                         {isScalp ? (
-                          <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-hunter-text-muted sm:mt-3">
+                          <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[0.68rem] font-semibold text-hunter-text-muted sm:mt-3 sm:px-3 sm:text-xs">
                             {isArabic ? 'روابط ريفرال' : 'Referral links'}
                           </div>
                         ) : (
-                          <div className="mt-3 font-heading text-3xl font-bold sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
+                          <div className="mt-2 font-heading text-xl font-bold sm:mt-3 sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
                             {formatMoney(product.price, product.currency)}
                           </div>
                         )}
                       </div>
 
                       {visibleFeatures.length > 0 ? (
-                        <div className={`mt-5 space-y-3 ${centerCardContent ? 'mx-auto max-w-md' : ''}`}>
+                        <div className={`mt-3 space-y-2 sm:mt-5 sm:space-y-3 ${centerCardContent ? 'mx-auto max-w-md' : ''}`}>
                           {visibleFeatures.map((feature, featureIndex) => (
                             <div
                               key={`${product.id}-feature-${featureIndex}`}
-                              className={`flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm leading-6 text-hunter-text-muted ${centerCardContent ? 'justify-center text-center' : ''}`}
+                              className={`${featureIndex > 0 ? 'hidden sm:flex' : 'flex'} items-start gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5 text-[0.68rem] leading-5 text-hunter-text-muted sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm sm:leading-6 ${centerCardContent ? 'justify-center text-center' : ''}`}
                             >
-                              <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--product-accent)' }} />
-                              <span>{feature}</span>
+                              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" style={{ color: 'var(--product-accent)' }} />
+                              <span className="line-clamp-2">{feature}</span>
                             </div>
                           ))}
                         </div>
                       ) : null}
 
-                      <div className="mt-5 flex gap-3 sm:mt-6">
+                      <div className="mt-auto flex gap-2 pt-4 sm:gap-3 sm:pt-6">
                         <CardAction
                           action={action}
-                          className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-center text-base font-semibold leading-tight text-hunter-bg transition hover:-translate-y-0.5"
+                          className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-center text-[0.78rem] font-semibold leading-tight text-hunter-bg transition hover:-translate-y-0.5 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base"
                           style={{
                             background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
                             boxShadow: '0 10px 22px color-mix(in srgb, var(--product-accent) 14%, transparent)',
                           }}
                         >
                           <span className="leading-tight sm:truncate">{ctaLabel}</span>
-                          <ArrowRight className="h-4 w-4 shrink-0 rtl:rotate-180" />
+                          <ArrowRight className="h-3.5 w-3.5 shrink-0 rtl:rotate-180 sm:h-4 sm:w-4" />
                         </CardAction>
 
                         {isScalp ? (
@@ -409,9 +413,9 @@ export default function PremiumProductSection({
                             to={`/services/${product.slug}`}
                             aria-label={`${detailsLabel}: ${productTitle}`}
                             title={detailsLabel}
-                            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green"
+                            className="inline-flex h-11 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green sm:h-12 sm:w-12 sm:rounded-2xl"
                           >
-                            <Info className="h-5 w-5" />
+                            <Info className="h-4 w-4 sm:h-5 sm:w-5" />
                           </Link>
                         ) : null}
                       </div>

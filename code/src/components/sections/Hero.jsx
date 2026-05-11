@@ -62,14 +62,14 @@ export default function Hero({ primaryCtaId = 'vip', scrollTargetId = 'funded' }
   }
 
   return (
-    <section id="home" className="relative flex min-h-[100svh] items-center overflow-hidden">
+    <section id="home" className="relative flex min-h-[88svh] items-center overflow-hidden md:min-h-[100svh]">
       <div className="absolute inset-0 z-0">
         <HeroVideo settings={hero.settings || {}} title={title || t('hero.title')} background />
       </div>
       <div className="pointer-events-none absolute inset-0 z-[1] bg-black/65" />
       <div className="pointer-events-none absolute inset-0 z-[2] bg-[radial-gradient(ellipse_at_top_right,_rgba(0,255,136,0.24),_transparent_42%),linear-gradient(90deg,_rgba(10,10,15,0.88)_0%,_rgba(10,10,15,0.66)_46%,_rgba(10,10,15,0.28)_100%)]" />
 
-      <div className="relative z-10 mx-auto flex min-h-[100svh] w-full max-w-7xl items-center px-4 pb-16 pt-24 sm:px-6 sm:pt-32 lg:px-8">
+      <div className="relative z-10 mx-auto flex min-h-[88svh] w-full max-w-7xl items-center px-4 pb-12 pt-24 sm:px-6 sm:pb-16 sm:pt-32 md:min-h-[100svh] lg:px-8">
         <motion.div
           initial={{ opacity: 0, x: isArabic ? 40 : -40 }}
           animate={{ opacity: 1, x: 0 }}
@@ -83,18 +83,18 @@ export default function Hero({ primaryCtaId = 'vip', scrollTargetId = 'funded' }
             </span>
           </div>
 
-          <h1 className="mx-auto mb-5 max-w-[22rem] font-heading text-[2.2rem] font-bold leading-[1.15] text-white drop-shadow-2xl sm:mb-6 sm:max-w-4xl sm:text-5xl lg:mx-0 lg:text-6xl xl:text-[4.5rem]">
+          <h1 className="mx-auto mb-4 max-w-[22rem] font-heading text-[2rem] font-bold leading-[1.15] text-white drop-shadow-2xl sm:mb-6 sm:max-w-4xl sm:text-5xl lg:mx-0 lg:text-6xl xl:text-[4.5rem]">
             {title || t('hero.title')}
-            <span className="mt-3 block text-[1.72rem] leading-[1.2] text-gradient sm:text-5xl lg:text-6xl xl:text-[4.5rem]">
+            <span className="mt-2 block text-[1.45rem] leading-[1.22] text-gradient sm:mt-3 sm:text-5xl lg:text-6xl xl:text-[4.5rem]">
               {subtitle || (isArabic ? 'إدارة كاملة لكل خدمات التداول' : 'Fully managed trading services')}
             </span>
           </h1>
 
-          <p className="mx-auto mb-7 max-w-xl text-base leading-8 text-white/85 drop-shadow-lg sm:mb-8 sm:text-lg lg:mx-0 lg:text-xl">
+          <p className="mx-auto mb-6 max-w-xl text-sm leading-7 text-white/85 drop-shadow-lg sm:mb-8 sm:text-lg sm:leading-8 lg:mx-0 lg:text-xl">
             {body || t('hero.subtitle')}
           </p>
 
-          <div className="mb-8 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 lg:justify-start">
+          <div className="mb-7 flex flex-col gap-3 sm:mb-10 sm:flex-row sm:flex-wrap sm:justify-center sm:gap-4 lg:justify-start">
             <motion.button
               whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
@@ -122,9 +122,9 @@ export default function Hero({ primaryCtaId = 'vip', scrollTargetId = 'funded' }
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: 0.35 + index * 0.1 }}
-                className="rounded-2xl border border-white/10 bg-black/25 px-2.5 py-3 text-center shadow-lg shadow-black/10 backdrop-blur sm:px-4 lg:text-start"
+                className="rounded-2xl border border-white/10 bg-black/25 px-2 py-2.5 text-center shadow-lg shadow-black/10 backdrop-blur sm:px-4 sm:py-3 lg:text-start"
               >
-                <div className="font-heading text-xl font-bold text-hunter-green sm:text-3xl">
+                <div className="font-heading text-lg font-bold text-hunter-green sm:text-3xl">
                   {stat.value}
                 </div>
                 <div className="mt-1 text-xs leading-5 text-white/75 sm:text-sm">

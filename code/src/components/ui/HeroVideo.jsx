@@ -49,7 +49,7 @@ export default function HeroVideo({ settings = {}, title = 'Hunter Trading', bac
       {shouldRenderVideo ? (
         <video
           key={videoKey}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-cover object-center"
           src={videoUrl}
           poster={posterUrl || undefined}
           autoPlay={shouldAutoplay && muted}
@@ -62,7 +62,7 @@ export default function HeroVideo({ settings = {}, title = 'Hunter Trading', bac
           onError={() => setMediaFailed(true)}
         />
       ) : imageUrl ? (
-        <img src={imageUrl} alt={title} className="absolute inset-0 h-full w-full object-cover" loading="eager" />
+        <img src={imageUrl} alt={title} className="absolute inset-0 h-full w-full object-cover object-center" loading="eager" />
       ) : (
         <div className="absolute inset-0 flex items-center justify-center bg-[radial-gradient(circle_at_top,_rgba(0,255,136,0.16),_transparent_40%),linear-gradient(135deg,_rgba(0,102,255,0.18),_rgba(18,18,26,1))]">
           <div className={background ? 'hidden' : 'flex h-20 w-20 items-center justify-center rounded-full border border-white/15 bg-white/10 text-hunter-green backdrop-blur'}>

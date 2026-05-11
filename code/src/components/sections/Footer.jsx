@@ -77,7 +77,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
       href={link.href}
       target={link.newTab ? '_blank' : undefined}
       rel={link.newTab ? 'noreferrer' : undefined}
-      className="inline-flex py-1 text-base leading-7 text-hunter-text-muted transition-colors hover:text-hunter-green md:text-sm"
+      className="inline-flex py-1 text-sm leading-6 text-hunter-text-muted transition-colors hover:text-hunter-green"
     >
       {link.name}
     </a>
@@ -85,10 +85,10 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
 
   return (
     <footer className="border-t border-white/10 bg-hunter-bg">
-      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-16 lg:px-8">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
-          <div className="lg:col-span-1">
-            <div className="mb-4 flex items-center gap-2">
+      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-16 lg:px-8">
+        <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-12">
+          <div className="col-span-2 text-center lg:col-span-1 lg:text-start">
+            <div className="mb-3 flex items-center justify-center gap-2 lg:justify-start">
               {siteLogo ? (
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-white/70 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10">
                   <img src={siteLogo} alt={general.website_name?.value || 'Hunter Trading'} className="h-full w-full object-contain p-1.5" />
@@ -100,9 +100,9 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
               )}
               <span className="font-heading text-xl font-bold text-hunter-text">{general.website_name?.value || 'Hunter Trading'}</span>
             </div>
-            <p className="mb-6 max-w-sm text-base leading-8 text-hunter-text-muted md:text-sm md:leading-7">{footerDescription}</p>
+            <p className="mx-auto mb-5 max-w-sm text-sm leading-7 text-hunter-text-muted lg:mx-0">{footerDescription}</p>
 
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap justify-center gap-2.5 lg:justify-start lg:gap-3">
               {socialLinks.map((social) => {
                 const brand = getSocialBrand(social.platform)
 
@@ -112,7 +112,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
                     href={normalizeSocialUrl(social.url)}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex h-12 w-12 items-center justify-center rounded-xl border transition hover:-translate-y-0.5 hover:shadow-lg md:h-11 md:w-11"
+                    className="flex h-10 w-10 items-center justify-center rounded-xl border transition hover:-translate-y-0.5 hover:shadow-lg md:h-11 md:w-11"
                     style={{
                       color: brand.color,
                       background: brand.background,
@@ -122,37 +122,37 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
                     aria-label={social.name}
                     title={social.name}
                   >
-                    <SocialBrandIcon platform={social.platform} className="h-5 w-5" />
+                    <SocialBrandIcon platform={social.platform} className="h-4 w-4 md:h-5 md:w-5" />
                   </a>
                 )
               })}
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-6 md:border-t-0 md:pt-0">
-            <h4 className="mb-4 font-heading text-lg font-semibold text-hunter-text md:text-base">{t('footer.quick_links')}</h4>
-            <ul className="space-y-3 md:space-y-2">
+          <div className="border-t border-white/10 pt-5 lg:border-t-0 lg:pt-0">
+            <h4 className="mb-3 font-heading text-base font-semibold text-hunter-text">{t('footer.quick_links')}</h4>
+            <ul className="space-y-1.5 md:space-y-2">
               {quickLinks.map((link) => <li key={`${link.name}-${link.href}`}>{renderLink(link)}</li>)}
             </ul>
           </div>
 
-          <div className="border-t border-white/10 pt-6 md:border-t-0 md:pt-0">
-            <h4 className="mb-4 font-heading text-lg font-semibold text-hunter-text md:text-base">{t('footer.legal')}</h4>
-            <ul className="space-y-3 md:space-y-2">
+          <div className="border-t border-white/10 pt-5 lg:border-t-0 lg:pt-0">
+            <h4 className="mb-3 font-heading text-base font-semibold text-hunter-text">{t('footer.legal')}</h4>
+            <ul className="space-y-1.5 md:space-y-2">
               {legalItems.map((link) => <li key={`${link.name}-${link.href}`}>{renderLink(link)}</li>)}
             </ul>
           </div>
 
-          <div className="border-t border-white/10 pt-6 md:border-t-0 md:pt-0">
-            <h4 className="mb-4 font-heading text-lg font-semibold text-hunter-text md:text-base">{currentLanguage === 'ar' ? 'التواصل' : 'Contact'}</h4>
-            <ul className="space-y-4 md:space-y-3">
-              <li className="flex items-start gap-3 text-hunter-text-muted">
-                <Mail className="mt-0.5 h-5 w-5 text-hunter-green" />
-                <span className="break-all leading-7">{general.support_email?.value || 'support@huntertrading.com'}</span>
+          <div className="col-span-2 border-t border-white/10 pt-5 lg:col-span-1 lg:border-t-0 lg:pt-0">
+            <h4 className="mb-3 font-heading text-base font-semibold text-hunter-text">{currentLanguage === 'ar' ? 'التواصل' : 'Contact'}</h4>
+            <ul className="grid gap-3 sm:grid-cols-2 lg:block lg:space-y-3">
+              <li className="flex items-start gap-2.5 text-sm text-hunter-text-muted">
+                <Mail className="mt-1 h-4 w-4 shrink-0 text-hunter-green" />
+                <span className="break-all leading-6">{general.support_email?.value || 'support@huntertrading.com'}</span>
               </li>
-              <li className="flex items-start gap-3 text-hunter-text-muted">
-                <MapPin className="mt-0.5 h-5 w-5 text-hunter-green" />
-                <span className="leading-7">{general.location?.value || 'Dubai, UAE'}</span>
+              <li className="flex items-start gap-2.5 text-sm text-hunter-text-muted">
+                <MapPin className="mt-1 h-4 w-4 shrink-0 text-hunter-green" />
+                <span className="leading-6">{general.location?.value || 'Dubai, UAE'}</span>
               </li>
             </ul>
           </div>
@@ -160,8 +160,15 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex items-start gap-3 rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-4 sm:p-5">
+        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
+          <details className="rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-4 sm:hidden">
+            <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-hunter-orange">
+              <AlertTriangle className="h-5 w-5 shrink-0" />
+              {riskWarningTitle}
+            </summary>
+            <div className="mt-3 text-sm leading-7 text-hunter-text-muted">{riskWarningContent}</div>
+          </details>
+          <div className="hidden items-start gap-3 rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-4 sm:flex sm:p-5">
             <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-hunter-orange" />
             <div className="text-sm leading-7 text-hunter-text-muted sm:text-base">
               <strong className="text-hunter-orange">{riskWarningTitle}:</strong> {riskWarningContent}
@@ -171,7 +178,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 text-center sm:px-6 sm:pb-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 py-5 text-center sm:px-6 lg:px-8">
           <p className="text-sm text-hunter-text-muted">
             © {currentYear} {general.website_name?.value || 'Hunter Trading'}. {t('footer.copyright')}
           </p>
