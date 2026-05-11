@@ -9,7 +9,7 @@ $projectRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 $apiProcess = $null
 $viteExitCode = 0
 $apiPort = if ($env:HUNTER_API_PORT) { [int]$env:HUNTER_API_PORT } else { 8000 }
-$apiBaseUrl = "http://127.0.0.1:$apiPort"
+$apiBaseUrl = $null
 
 function Write-DevLine {
     param(
@@ -33,6 +33,27 @@ function Test-HunterApi {
     } catch {
         return $false
     }
+}
+
+function Test-PortInUse {
+    param(
+        [int]$Port
+    )
+
+    return [bool](Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue)
+}
+
+function Resolve-ApiPort {
+    if ($env:HUNTER_API_PORT) {
+        return [int]$env:HUNTER_API_PORT
+    }
+
+    $candidate = 8000
+    while (Test-PortInUse -Port $candidate) {
+        $candidate++
+    }
+
+    return $candidate
 }
 
 function Stop-WorkspaceDevServers {
@@ -110,11 +131,14 @@ try {
     Stop-WorkspaceDevServers
     Start-Sleep -Milliseconds 500
 
+    $apiPort = Resolve-ApiPort
+    $apiBaseUrl = "http://127.0.0.1:$apiPort"
+
     Write-DevLine 'dev' "Starting PHP API server on $apiBaseUrl"
     $apiProcess = Start-Process php -ArgumentList '-S', "127.0.0.1:$apiPort", 'router.php' -WorkingDirectory $projectRoot -PassThru -WindowStyle Hidden
 
     if (-not (Wait-ForApi)) {
-        throw 'API server did not become ready on port 8000.'
+        throw "API server did not become ready on port $apiPort."
     }
 
     Write-DevLine 'dev' 'Starting Vite dev server'

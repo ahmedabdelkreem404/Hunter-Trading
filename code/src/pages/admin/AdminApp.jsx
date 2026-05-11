@@ -195,7 +195,7 @@ const tabs = [
   { id: 'testimonials', label: 'آراء العملاء', icon: MessageSquareQuote, description: 'إضافة وتعديل آراء العملاء المرتبطة بالخدمات.' },
   { id: 'market', label: 'متابعة السوق', icon: TrendingUp, description: 'تحديثات وتحليلات السوق الظاهرة في الموقع.' },
   { id: 'media', label: 'مكتبة الوسائط', icon: Image, description: 'رفع الصور والفيديوهات واستخدامها في أي سكشن.' },
-  { id: 'coach', label: 'المدرب والسوشيال', icon: UserSquare2, description: 'بيانات المدرب وصورته وروابط السوشيال الموحدة.' },
+  { id: 'coach', label: 'المدرب', icon: UserSquare2, description: 'بيانات المدرب وصورته ومحتوى سكشن الكوتش.' },
   { id: 'settings', label: 'إعدادات الموقع', icon: Settings, description: 'اللوجو، الألوان، التواصل، الدفع، القانوني والفوتر.' },
   { id: 'leads', label: 'العملاء المحتملون', icon: Users, description: 'كل بيانات العملاء المرسلة من الموقع.' },
 ]
@@ -829,10 +829,7 @@ export default function AdminApp() {
               setCoach={setCoach}
               coachImageFile={coachImageFile}
               setCoachImageFile={setCoachImageFile}
-              settings={siteSettings}
-              setSettings={setSiteSettings}
               onSaveCoach={saveCoach}
-              onSaveSettings={saveSettings}
               saving={saving}
             />
           ) : null}
