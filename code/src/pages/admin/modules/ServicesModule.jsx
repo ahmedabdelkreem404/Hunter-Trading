@@ -1,4 +1,4 @@
-import { useMemo } from 'react'
+import { useEffect, useMemo } from 'react'
 import { Plus, Trash2 } from 'lucide-react'
 import { ActionButton, Field, FilePicker, MediaPicker, SectionCard, Select, TextArea, Toggle } from './shared/AdminUI'
 
@@ -184,11 +184,20 @@ export default function ServicesModule({
   onUploadImage,
   saving,
   media = [],
+  lockedType = '',
+  moduleTitle = '',
+  moduleDescription = '',
 }) {
+  useEffect(() => {
+    if (!lockedType) return
+    setServiceDraft((current) => (current.type === lockedType ? current : { ...current, type: lockedType }))
+  }, [lockedType, setServiceDraft])
+
   const filteredServices = useMemo(() => {
-    if (filterType === 'all') return services
-    return services.filter((service) => service.type === filterType)
-  }, [filterType, services])
+    const effectiveType = lockedType || filterType
+    if (effectiveType === 'all') return services
+    return services.filter((service) => service.type === effectiveType)
+  }, [filterType, lockedType, services])
 
   const typeOptions = [
     ['funded', 'الحسابات الممولة'],
@@ -198,17 +207,24 @@ export default function ServicesModule({
     ['offers', 'العروض'],
   ]
 
+  const currentTypeLabel = moduleTitle || typeOptions.find(([value]) => value === lockedType)?.[1] || 'الخدمة'
+
   return (
     <>
-      <SectionCard title="إضافة خدمة أو منتج">
+      <SectionCard title={`إضافة عنصر جديد في ${lockedType ? currentTypeLabel : 'الخدمات والمنتجات'}`}>
+        {moduleDescription ? <p className="mb-5 text-sm leading-7 text-slate-400">{moduleDescription}</p> : null}
         <details className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
           <summary className="cursor-pointer list-none rounded-xl bg-white/5 p-3 font-semibold text-white">
             فتح نموذج إضافة خدمة جديدة
           </summary>
           <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-          <Select label="نوع الخدمة" value={serviceDraft.type} onChange={(event) => setServiceDraft((current) => ({ ...current, type: event.target.value }))}>
-            {typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-          </Select>
+          {lockedType ? (
+            <Field label="نوع السكشن" value={currentTypeLabel} readOnly />
+          ) : (
+            <Select label="نوع الخدمة" value={serviceDraft.type} onChange={(event) => setServiceDraft((current) => ({ ...current, type: event.target.value }))}>
+              {typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+            </Select>
+          )}
           <Field label="الرابط المختصر" value={serviceDraft.slug} onChange={(event) => setServiceDraft((current) => ({ ...current, slug: event.target.value }))} />
           <Field label="الترتيب" type="number" value={serviceDraft.sort_order} onChange={(event) => setServiceDraft((current) => ({ ...current, sort_order: Number(event.target.value) }))} />
           <Field label="العنوان بالإنجليزية" value={serviceDraft.title_en} onChange={(event) => setServiceDraft((current) => ({ ...current, title_en: event.target.value }))} />
@@ -310,7 +326,7 @@ export default function ServicesModule({
           />
           </div>
           <div className="mt-6">
-            <ActionButton onClick={onCreate} className="w-full bg-green-600 text-white sm:w-auto">
+            <ActionButton onClick={() => onCreate(lockedType)} className="w-full bg-green-600 text-white sm:w-auto">
               {saving === 'service-create' ? 'جاري الحفظ...' : 'إضافة الخدمة'}
             </ActionButton>
           </div>
@@ -318,15 +334,20 @@ export default function ServicesModule({
       </SectionCard>
 
       <SectionCard
-        title="الخدمات الحالية"
-        action={
+        title={lockedType ? `العناصر الحالية في ${currentTypeLabel}` : 'الخدمات الحالية'}
+        action={!lockedType ? (
           <Select label="فلترة حسب النوع" value={filterType} onChange={(event) => setFilterType(event.target.value)}>
             <option value="all">كل الخدمات</option>
             {typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
           </Select>
-        }
+        ) : null}
       >
         <div className="space-y-4">
+          {filteredServices.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-6 text-center text-sm text-slate-400">
+              لا توجد عناصر مضافة في هذا السكشن حتى الآن.
+            </div>
+          ) : null}
           {filteredServices.map((service) => (
             <details key={service.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
               <summary className="flex cursor-pointer list-none flex-col gap-2 rounded-xl bg-white/5 p-3 text-white sm:flex-row sm:items-center sm:justify-between">
@@ -334,9 +355,13 @@ export default function ServicesModule({
                 <span className="text-sm text-slate-400">{typeOptions.find(([value]) => value === service.type)?.[1] || service.type}</span>
               </summary>
               <div className="mt-4 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                <Select label="نوع الخدمة" value={service.type} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, type: event.target.value } : item)))}>
-                  {typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </Select>
+                {lockedType ? (
+                  <Field label="نوع السكشن" value={currentTypeLabel} readOnly />
+                ) : (
+                  <Select label="نوع الخدمة" value={service.type} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, type: event.target.value } : item)))}>
+                    {typeOptions.map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </Select>
+                )}
                 <Field label="الرابط المختصر" value={service.slug || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, slug: event.target.value } : item)))} />
                 <Field label="الترتيب" type="number" value={service.sort_order || 0} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, sort_order: Number(event.target.value) } : item)))} />
                 <Field label="العنوان بالإنجليزية" value={service.title_en || ''} onChange={(event) => setServices((current) => current.map((item) => (item.id === service.id ? { ...item, title_en: event.target.value } : item)))} />

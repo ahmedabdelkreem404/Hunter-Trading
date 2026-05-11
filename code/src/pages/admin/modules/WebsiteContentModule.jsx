@@ -85,7 +85,7 @@ function MenuManager({ title, items, onChange }) {
   )
 }
 
-export default function WebsiteContentModule({ sections, setSections, onSave, saving, media = [] }) {
+export default function WebsiteContentModule({ sections, setSections, onSave, saving, media = [], contentSectionKeys = null }) {
   const updateSection = (sectionKey, changes) => {
     setSections((current) => current.map((section) => (section.section_key === sectionKey ? { ...section, ...changes } : section)))
   }
@@ -98,7 +98,13 @@ export default function WebsiteContentModule({ sections, setSections, onSave, sa
   const hero = sections.find((section) => section.section_key === 'hero')
   const navigation = sections.find((section) => section.section_key === 'navigation')
   const footer = sections.find((section) => section.section_key === 'footer')
-  const contentSections = sections.filter((section) => !['hero', 'coach', 'navigation', 'footer'].includes(section.section_key))
+  const contentSections = sections.filter((section) => {
+    if (Array.isArray(contentSectionKeys)) {
+      return contentSectionKeys.includes(section.section_key)
+    }
+
+    return !['hero', 'coach', 'navigation', 'footer'].includes(section.section_key)
+  })
 
   return (
     <>
@@ -167,26 +173,28 @@ export default function WebsiteContentModule({ sections, setSections, onSave, sa
         </SectionCard>
       ) : null}
 
-      <SectionCard title="سكشنات الصفحة الرئيسية">
-        <div className="space-y-4">
-          {contentSections.map((section) => (
-            <div key={section.section_key} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
-              <div className="mb-4 text-base font-semibold text-hunter-green">{sectionNames[section.section_key] || section.section_key}</div>
-              <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-                <Field label="عنوان السكشن بالإنجليزية" value={section.title_en || ''} onChange={(event) => updateSection(section.section_key, { title_en: event.target.value })} />
-                <Field label="عنوان السكشن بالعربية" value={section.title_ar || ''} onChange={(event) => updateSection(section.section_key, { title_ar: event.target.value })} />
-                <Field label="الترتيب" type="number" value={section.sort_order || 0} onChange={(event) => updateSection(section.section_key, { sort_order: Number(event.target.value) })} />
-                <Toggle label="ظاهر" checked={!!section.is_visible} onChange={(value) => updateSection(section.section_key, { is_visible: value ? 1 : 0 })} />
-                <TextArea label="الوصف بالإنجليزية" className="xl:col-span-2" value={section.subtitle_en || ''} onChange={(event) => updateSection(section.section_key, { subtitle_en: event.target.value })} />
-                <TextArea label="الوصف بالعربية" className="xl:col-span-2" value={section.subtitle_ar || ''} onChange={(event) => updateSection(section.section_key, { subtitle_ar: event.target.value })} />
-                <Field label="نص الزر بالإنجليزية" value={section.cta_label_en || ''} onChange={(event) => updateSection(section.section_key, { cta_label_en: event.target.value })} />
-                <Field label="نص الزر بالعربية" value={section.cta_label_ar || ''} onChange={(event) => updateSection(section.section_key, { cta_label_ar: event.target.value })} />
-                <Field label="رابط الزر" className="md:col-span-2" value={section.cta_url || ''} onChange={(event) => updateSection(section.section_key, { cta_url: event.target.value })} />
+      {contentSections.length > 0 ? (
+        <SectionCard title="سكشنات الصفحة الرئيسية">
+          <div className="space-y-4">
+            {contentSections.map((section) => (
+              <div key={section.section_key} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
+                <div className="mb-4 text-base font-semibold text-hunter-green">{sectionNames[section.section_key] || section.section_key}</div>
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+                  <Field label="عنوان السكشن بالإنجليزية" value={section.title_en || ''} onChange={(event) => updateSection(section.section_key, { title_en: event.target.value })} />
+                  <Field label="عنوان السكشن بالعربية" value={section.title_ar || ''} onChange={(event) => updateSection(section.section_key, { title_ar: event.target.value })} />
+                  <Field label="الترتيب" type="number" value={section.sort_order || 0} onChange={(event) => updateSection(section.section_key, { sort_order: Number(event.target.value) })} />
+                  <Toggle label="ظاهر" checked={!!section.is_visible} onChange={(value) => updateSection(section.section_key, { is_visible: value ? 1 : 0 })} />
+                  <TextArea label="الوصف بالإنجليزية" className="xl:col-span-2" value={section.subtitle_en || ''} onChange={(event) => updateSection(section.section_key, { subtitle_en: event.target.value })} />
+                  <TextArea label="الوصف بالعربية" className="xl:col-span-2" value={section.subtitle_ar || ''} onChange={(event) => updateSection(section.section_key, { subtitle_ar: event.target.value })} />
+                  <Field label="نص الزر بالإنجليزية" value={section.cta_label_en || ''} onChange={(event) => updateSection(section.section_key, { cta_label_en: event.target.value })} />
+                  <Field label="نص الزر بالعربية" value={section.cta_label_ar || ''} onChange={(event) => updateSection(section.section_key, { cta_label_ar: event.target.value })} />
+                  <Field label="رابط الزر" className="md:col-span-2" value={section.cta_url || ''} onChange={(event) => updateSection(section.section_key, { cta_url: event.target.value })} />
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
-      </SectionCard>
+            ))}
+          </div>
+        </SectionCard>
+      ) : null}
 
       {navigation ? (
         <MenuManager

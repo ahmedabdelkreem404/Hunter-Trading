@@ -15,8 +15,13 @@ function statusLabel(value = 'pending') {
 
 export default function PaymentOrdersModule({ orders, setOrders, onSaveOrder, saving }) {
   return (
-    <SectionCard title="طلبات الدفع">
+    <SectionCard title="طلبات الدفع والتأكيد">
       <div className="space-y-4">
+        {orders.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-white/10 bg-slate-950/40 p-6 text-center text-sm text-slate-400">
+            لا توجد طلبات دفع حتى الآن. عندما يرفع العميل إيصال الدفع سيظهر هنا مع بياناته وحالة الطلب.
+          </div>
+        ) : null}
         {orders.map((order) => (
           <div key={order.id} className="rounded-2xl border border-white/10 bg-slate-950/40 p-4">
             <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">

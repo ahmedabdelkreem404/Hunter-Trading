@@ -17,7 +17,9 @@ import { adminAPI, authAPI, setCsrfToken } from '../../api'
 import DashboardOverviewModule from './modules/DashboardOverviewModule'
 import WebsiteContentModule from './modules/WebsiteContentModule'
 import ServicesModule from './modules/ServicesModule'
+import ServiceSectionModule from './modules/ServiceSectionModule'
 import PaymentOrdersModule from './modules/PaymentOrdersModule'
+import PaymentSettingsModule from './modules/PaymentSettingsModule'
 import TestimonialsModule from './modules/TestimonialsModule'
 import MarketModule from './modules/MarketModule'
 import CoachSocialModule from './modules/CoachSocialModule'
@@ -187,18 +189,54 @@ const defaultSettings = {
   text_dark: '#ffffff',
 }
 
-const tabs = [
-  { id: 'overview', label: 'الرئيسية', icon: LayoutDashboard, description: 'ملخص سريع للطلبات والعملاء والخدمات.' },
-  { id: 'website', label: 'محتوى الموقع', icon: Package, description: 'الهيرو، سكشنات الصفحة الرئيسية، النافبار والفوتر.' },
-  { id: 'services', label: 'الخدمات والمنتجات', icon: Package, description: 'الحسابات الممولة، VIP، السكالب، الكورسات والعروض.' },
-  { id: 'orders', label: 'طلبات الدفع', icon: CreditCard, description: 'مراجعة المدفوعات وتحويل العميل بعد الموافقة.' },
-  { id: 'testimonials', label: 'آراء العملاء', icon: MessageSquareQuote, description: 'إضافة وتعديل آراء العملاء المرتبطة بالخدمات.' },
-  { id: 'market', label: 'متابعة السوق', icon: TrendingUp, description: 'تحديثات وتحليلات السوق الظاهرة في الموقع.' },
-  { id: 'media', label: 'مكتبة الوسائط', icon: Image, description: 'رفع الصور والفيديوهات واستخدامها في أي سكشن.' },
-  { id: 'coach', label: 'المدرب', icon: UserSquare2, description: 'بيانات المدرب وصورته ومحتوى سكشن الكوتش.' },
-  { id: 'settings', label: 'إعدادات الموقع', icon: Settings, description: 'اللوجو، الألوان، التواصل، الدفع، القانوني والفوتر.' },
-  { id: 'leads', label: 'العملاء المحتملون', icon: Users, description: 'كل بيانات العملاء المرسلة من الموقع.' },
+const serviceTabConfigs = [
+  {
+    id: 'funded',
+    type: 'funded',
+    label: 'الحسابات الممولة',
+    description: 'تحكم في سكشن الحسابات الممولة والكروت والأسعار والمميزات وصفحة التفاصيل.',
+  },
+  {
+    id: 'vip',
+    type: 'vip',
+    label: 'VIP',
+    description: 'تحكم في سكشن VIP والباقات والوسائط والأسعار وروابط الشراء.',
+  },
+  {
+    id: 'scalp',
+    type: 'scalp',
+    label: 'السكالب',
+    description: 'تحكم في شرح السكالب ومنصات GTC وValtex والريفيرال والشروط بدون دفع داخلي إلا إذا اخترت ذلك.',
+  },
+  {
+    id: 'courses',
+    type: 'courses',
+    label: 'الدورات',
+    description: 'تحكم في سكشن الدورات والكورسات ومحتوى كل دورة ووسائطها.',
+  },
+  {
+    id: 'offers',
+    type: 'offers',
+    label: 'العروض',
+    description: 'تحكم في العروض ومواعيد البداية والنهاية والكروت والصفحات التفصيلية.',
+  },
 ]
+
+const tabs = [
+  { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, group: 'عام', description: 'ملخص سريع للطلبات والعملاء والخدمات.' },
+  { id: 'home', label: 'الرئيسية', icon: Package, group: 'الموقع', description: 'الهيرو، فيديو الخلفية، الإحصائيات، النافبار والفوتر.' },
+  ...serviceTabConfigs.map((tab) => ({ ...tab, icon: Package, group: 'سكشنات الخدمات' })),
+  { id: 'payment-settings', label: 'إعدادات الدفع', icon: CreditCard, group: 'الدفع والعملاء', description: 'أرقام التحويل ورسائل وتعليمات الدفع التي تظهر للعميل.' },
+  { id: 'orders', label: 'طلبات الدفع', icon: CreditCard, group: 'الدفع والعملاء', description: 'مراجعة من دفع، حالة الطلب، الإيصال، ورابط التحويل بعد الموافقة.' },
+  { id: 'leads', label: 'العملاء المحتملون', icon: Users, group: 'الدفع والعملاء', description: 'كل بيانات العملاء المرسلة من الموقع.' },
+  { id: 'settings', label: 'إعدادات الموقع', icon: Settings, group: 'إعدادات وإضافات', description: 'اللوجو، الألوان، السوشيال، القانوني والفوتر.' },
+  { id: 'media', label: 'مكتبة الوسائط', icon: Image, group: 'إعدادات وإضافات', description: 'رفع الصور والفيديوهات واستخدامها في أي سكشن.' },
+  { id: 'coach', label: 'المدرب', icon: UserSquare2, group: 'إعدادات وإضافات', description: 'بيانات المدرب وصورته ومحتوى سكشن الكوتش.' },
+  { id: 'testimonials', label: 'آراء العملاء', icon: MessageSquareQuote, group: 'إعدادات وإضافات', description: 'إضافة وتعديل آراء العملاء المرتبطة بالخدمات.' },
+  { id: 'market', label: 'متابعة السوق', icon: TrendingUp, group: 'إعدادات وإضافات', description: 'تحديثات وتحليلات السوق الظاهرة في الموقع.' },
+]
+
+const sidebarGroups = ['عام', 'الموقع', 'سكشنات الخدمات', 'الدفع والعملاء', 'إعدادات وإضافات']
 
 function toDateTimeLocal(value) {
   if (!value) return ''
@@ -248,6 +286,7 @@ export default function AdminApp() {
   const [marketImageFile, setMarketImageFile] = useState(null)
 
   const activeTabMeta = tabs.find((tab) => tab.id === activeTab) ?? tabs[0]
+  const activeServiceTab = serviceTabConfigs.find((tab) => tab.id === activeTab)
   const pendingOrders = useMemo(() => orders.filter((order) => String(order.status || 'pending') === 'pending').length, [orders])
 
   const redirectToLogin = () => {
@@ -384,11 +423,12 @@ export default function AdminApp() {
     }
   }
 
-  const createService = async () => {
+  const createService = async (forcedType = '') => {
     setSaving('service-create')
     try {
       let payload = {
         ...serviceDraft,
+        type: forcedType || serviceDraft.type,
         offer_starts_at: fromDateTimeLocal(serviceDraft.offer_starts_at),
         offer_ends_at: fromDateTimeLocal(serviceDraft.offer_ends_at),
       }
@@ -406,7 +446,7 @@ export default function AdminApp() {
       }
 
       await adminAPI.createService(payload)
-      setServiceDraft(emptyService)
+      setServiceDraft({ ...emptyService, type: forcedType || emptyService.type })
       setServiceImageFile(null)
       await refreshServices()
       await refreshMedia()
@@ -714,25 +754,38 @@ export default function AdminApp() {
             </button>
           </div>
 
-          <div className="mt-4 space-y-2">
-            {tabs.map((tab) => {
-              const Icon = tab.icon
+          <div className="mt-4 space-y-5">
+            {sidebarGroups.map((group) => {
+              const groupTabs = tabs.filter((tab) => tab.group === group)
+
+              if (groupTabs.length === 0) {
+                return null
+              }
+
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id)
-                    setSidebarOpen(false)
-                  }}
-                  className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-right transition-all ${
-                    activeTab === tab.id
-                      ? 'border border-hunter-green/30 bg-hunter-green/15 text-hunter-green'
-                      : 'text-slate-300 hover:bg-white/5'
-                  }`}
-                >
-                  <Icon className="h-5 w-5" />
-                  <span className="font-medium">{tab.label}</span>
-                </button>
+                <div key={group} className="space-y-2">
+                  <div className="px-3 text-[11px] font-semibold uppercase tracking-wide text-slate-500">{group}</div>
+                  {groupTabs.map((tab) => {
+                    const Icon = tab.icon
+                    return (
+                      <button
+                        key={tab.id}
+                        onClick={() => {
+                          setActiveTab(tab.id)
+                          setSidebarOpen(false)
+                        }}
+                        className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-right transition-all ${
+                          activeTab === tab.id
+                            ? 'border border-hunter-green/30 bg-hunter-green/15 text-hunter-green'
+                            : 'text-slate-300 hover:bg-white/5'
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        <span className="font-medium">{tab.label}</span>
+                      </button>
+                    )
+                  })}
+                </div>
               )
             })}
           </div>
@@ -760,23 +813,44 @@ export default function AdminApp() {
           {message ? <div className="rounded-2xl border border-hunter-green/20 bg-hunter-green/15 px-4 py-3 text-hunter-green">{message}</div> : null}
 
           {activeTab === 'overview' ? <DashboardOverviewModule dashboard={dashboard} servicesCount={services.length} pendingOrders={pendingOrders} /> : null}
-          {activeTab === 'website' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} media={media} /> : null}
-          {activeTab === 'services' ? (
-            <ServicesModule
-              services={services}
-              setServices={setServices}
-              serviceDraft={serviceDraft}
-              setServiceDraft={setServiceDraft}
-              serviceImageFile={serviceImageFile}
-              setServiceImageFile={setServiceImageFile}
-              filterType={serviceTypeFilter}
-              setFilterType={setServiceTypeFilter}
-              onCreate={createService}
-              onUpdate={updateService}
-              onDelete={deleteService}
-              onUploadImage={uploadServiceImage}
-              saving={saving}
-              media={media}
+          {activeTab === 'home' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} media={media} contentSectionKeys={[]} /> : null}
+          {activeServiceTab ? (
+            <>
+              <ServiceSectionModule
+                sectionKey={activeServiceTab.type}
+                title={activeServiceTab.label}
+                sections={sections}
+                setSections={setSections}
+                onSave={saveSections}
+                saving={saving === 'sections-save'}
+              />
+              <ServicesModule
+                services={services}
+                setServices={setServices}
+                serviceDraft={serviceDraft}
+                setServiceDraft={setServiceDraft}
+                serviceImageFile={serviceImageFile}
+                setServiceImageFile={setServiceImageFile}
+                filterType={serviceTypeFilter}
+                setFilterType={setServiceTypeFilter}
+                onCreate={createService}
+                onUpdate={updateService}
+                onDelete={deleteService}
+                onUploadImage={uploadServiceImage}
+                saving={saving}
+                media={media}
+                lockedType={activeServiceTab.type}
+                moduleTitle={activeServiceTab.label}
+                moduleDescription={activeServiceTab.description}
+              />
+            </>
+          ) : null}
+          {activeTab === 'payment-settings' ? (
+            <PaymentSettingsModule
+              settings={siteSettings}
+              setSettings={setSiteSettings}
+              onSave={saveSettings}
+              saving={saving === 'settings-save'}
             />
           ) : null}
           {activeTab === 'orders' ? <PaymentOrdersModule orders={orders} setOrders={setOrders} onSaveOrder={updateOrder} saving={saving} /> : null}
