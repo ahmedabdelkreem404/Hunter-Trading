@@ -16,11 +16,12 @@ import LeadMagnet from './components/ui/LeadMagnet'
 import TelegramFloating from './components/ui/TelegramFloating'
 import ScrollToTop from './components/ui/ScrollToTop'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
-import { sectionSettingsAPI, settingsAPI } from './api'
+import { PUBLIC_CONTENT_CHANGED_EVENT, invalidatePublicCache, sectionSettingsAPI, settingsAPI } from './api'
 import useApiData from './hooks/useApiData'
 import { buildHomepageSectionsFromSettings, getVisibleHomepageSections, parseHomepageLayout } from './utils/sectionLayout'
 
 const LIVE_REFRESH_INTERVAL = 0
+const SECTION_REFRESH_INTERVAL = 3000
 
 const sectionComponents = {
   hero: Hero,
@@ -39,19 +40,20 @@ function AppContent() {
   const { isDarkMode } = useTheme()
   const [showLeadMagnet, setShowLeadMagnet] = useState(false)
   const [isLoading, setIsLoading] = useState(true)
+  const [contentRevision, setContentRevision] = useState(0)
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
     {},
     (response) => response.data ?? {},
-    [],
+    [contentRevision],
     { refreshInterval: LIVE_REFRESH_INTERVAL }
   )
   const { data: sectionSettings } = useApiData(
     sectionSettingsAPI.getPublic,
     [],
     (response) => response.data ?? [],
-    [],
-    { refreshInterval: LIVE_REFRESH_INTERVAL }
+    [contentRevision],
+    { refreshInterval: SECTION_REFRESH_INTERVAL }
   )
   const generalSettings = settings.general ?? {}
   const homepageLayoutValue =
@@ -72,6 +74,36 @@ function AppContent() {
     ?? visibleSections.find((section) => section.id !== 'hero')?.anchor
     ?? firstVisibleAnchor
   const heroScrollTargetId = visibleSections.find((section) => section.id !== 'hero')?.anchor ?? firstVisibleAnchor
+
+  useEffect(() => {
+    const refreshContent = () => {
+      invalidatePublicCache('/sections')
+      invalidatePublicCache('/settings/public')
+      setContentRevision((current) => current + 1)
+    }
+
+    window.addEventListener(PUBLIC_CONTENT_CHANGED_EVENT, refreshContent)
+
+    const handleStorage = (event) => {
+      if (event.key === PUBLIC_CONTENT_CHANGED_EVENT) {
+        refreshContent()
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+
+    let channel = null
+    if ('BroadcastChannel' in window) {
+      channel = new BroadcastChannel(PUBLIC_CONTENT_CHANGED_EVENT)
+      channel.onmessage = refreshContent
+    }
+
+    return () => {
+      window.removeEventListener(PUBLIC_CONTENT_CHANGED_EVENT, refreshContent)
+      window.removeEventListener('storage', handleStorage)
+      channel?.close()
+    }
+  }, [])
 
   useEffect(() => {
     // Check if user has seen lead magnet

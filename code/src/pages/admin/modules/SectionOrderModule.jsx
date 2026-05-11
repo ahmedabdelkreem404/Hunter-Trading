@@ -1,4 +1,5 @@
-import { ActionButton, Field, SectionCard, Toggle } from './shared/AdminUI'
+import { ArrowDown, ArrowUp } from 'lucide-react'
+import { ActionButton, SectionCard, Toggle } from './shared/AdminUI'
 
 const sectionLabels = {
   hero: 'الرئيسية / الهيرو',
@@ -24,45 +25,101 @@ function sortSections(sections = []) {
   })
 }
 
-export default function SectionOrderModule({ sections, setSections, onSave, saving }) {
+function normalizePageOrder(pageSections) {
+  return pageSections.map((section, index) => ({ ...section, sort_order: index + 1 }))
+}
+
+function mergeSections(allSections, orderedPageSections) {
+  const updatesByKey = Object.fromEntries(orderedPageSections.map((section) => [section.section_key, section]))
+  return allSections.map((section) => updatesByKey[section.section_key] || section)
+}
+
+export default function SectionOrderModule({ sections, setSections, onSave, onAutoSave, saving }) {
   const pageSections = sortSections(sections.filter((section) => orderedSectionKeys.includes(section.section_key)))
 
-  const updateSection = (sectionKey, changes) => {
-    setSections((current) => current.map((section) => (section.section_key === sectionKey ? { ...section, ...changes } : section)))
+  const commitSections = (nextSections) => {
+    setSections(nextSections)
+    onAutoSave?.(nextSections)
+  }
+
+  const moveSection = (sectionKey, direction) => {
+    const currentPageSections = sortSections(sections.filter((section) => orderedSectionKeys.includes(section.section_key)))
+    const currentIndex = currentPageSections.findIndex((section) => section.section_key === sectionKey)
+    const targetIndex = currentIndex + direction
+
+    if (currentIndex < 0 || targetIndex < 0 || targetIndex >= currentPageSections.length) {
+      return
+    }
+
+    const nextPageSections = [...currentPageSections]
+    const currentSection = nextPageSections[currentIndex]
+    nextPageSections[currentIndex] = nextPageSections[targetIndex]
+    nextPageSections[targetIndex] = currentSection
+    commitSections(mergeSections(sections, normalizePageOrder(nextPageSections)))
+  }
+
+  const toggleSection = (sectionKey, value) => {
+    const nextSections = sections.map((section) =>
+      section.section_key === sectionKey ? { ...section, is_visible: value ? 1 : 0 } : section
+    )
+    commitSections(nextSections)
   }
 
   return (
     <SectionCard
       title="ترتيب وظهور سكشنات الموقع"
       action={
-        <ActionButton onClick={onSave} className="w-full bg-green-600 text-white sm:w-auto">
-          {saving ? 'جاري الحفظ...' : 'حفظ ترتيب وظهور السكشنات'}
-        </ActionButton>
+        <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+          <div className="rounded-xl border border-hunter-green/20 bg-hunter-green/10 px-4 py-3 text-center text-sm font-semibold text-hunter-green">
+            {saving ? 'جاري الحفظ التلقائي...' : 'الحفظ تلقائي'}
+          </div>
+          <ActionButton onClick={onSave} className="w-full bg-white/5 text-slate-200 sm:w-auto">
+            حفظ الآن
+          </ActionButton>
+        </div>
       }
     >
       <p className="mb-5 text-sm leading-7 text-slate-400">
-        من هنا تتحكم في ترتيب كل سكشن داخل الصفحة الرئيسية وتحدد إذا كان ظاهر أو مخفي. تفاصيل كل سكشن ومحتواه موجودة في التبويب الخاص به.
+        استخدم الأسهم لتحريك السكشن فوق أو تحت. أي تغيير هنا يتم حفظه تلقائيا ويظهر في الموقع بدون تحديث الصفحة.
       </p>
 
       <div className="space-y-3">
-        {pageSections.map((section) => (
-          <div key={section.section_key} className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 md:grid-cols-[1.2fr_0.55fr_0.75fr] md:items-end">
+        {pageSections.map((section, index) => (
+          <div key={section.section_key} className="grid gap-3 rounded-2xl border border-white/10 bg-slate-950/40 p-4 md:grid-cols-[auto_1fr_0.8fr] md:items-center">
+            <div className="flex items-center gap-2 md:flex-col">
+              <button
+                type="button"
+                onClick={() => moveSection(section.section_key, -1)}
+                disabled={index === 0 || saving}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-slate-200 transition hover:border-hunter-green/40 hover:text-hunter-green disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label={`رفع ${sectionLabels[section.section_key] || section.section_key}`}
+                title="رفع السكشن"
+              >
+                <ArrowUp className="h-5 w-5" />
+              </button>
+              <button
+                type="button"
+                onClick={() => moveSection(section.section_key, 1)}
+                disabled={index === pageSections.length - 1 || saving}
+                className="inline-flex h-11 w-11 items-center justify-center rounded-xl border border-white/10 bg-slate-800 text-slate-200 transition hover:border-hunter-green/40 hover:text-hunter-green disabled:cursor-not-allowed disabled:opacity-35"
+                aria-label={`تنزيل ${sectionLabels[section.section_key] || section.section_key}`}
+                title="تنزيل السكشن"
+              >
+                <ArrowDown className="h-5 w-5" />
+              </button>
+            </div>
+
             <div>
               <div className="text-base font-semibold text-white">{sectionLabels[section.section_key] || section.section_key}</div>
               <div className="mt-1 text-xs text-slate-500">
-                {section.title_ar || section.title_en || section.section_key}
+                ترتيبه الحالي: {index + 1} • {section.title_ar || section.title_en || section.section_key}
               </div>
             </div>
-            <Field
-              label="ترتيب الظهور"
-              type="number"
-              value={section.sort_order || 0}
-              onChange={(event) => updateSection(section.section_key, { sort_order: Number(event.target.value) })}
-            />
+
             <Toggle
               label={section.is_visible ? 'ظاهر في الموقع' : 'مخفي من الموقع'}
               checked={!!section.is_visible}
-              onChange={(value) => updateSection(section.section_key, { is_visible: value ? 1 : 0 })}
+              onChange={(value) => toggleSection(section.section_key, value)}
             />
           </div>
         ))}

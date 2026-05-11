@@ -3,6 +3,7 @@ import axios from 'axios'
 const API_BASE = '/api'
 let csrfToken = ''
 const publicGetCache = new Map()
+export const PUBLIC_CONTENT_CHANGED_EVENT = 'hunter:public-content-changed'
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -14,6 +15,42 @@ const api = axios.create({
 
 export function setCsrfToken(token) {
   csrfToken = token || ''
+}
+
+export function invalidatePublicCache(prefix = '') {
+  if (!prefix) {
+    publicGetCache.clear()
+    return
+  }
+
+  for (const key of publicGetCache.keys()) {
+    if (key.startsWith(prefix)) {
+      publicGetCache.delete(key)
+    }
+  }
+}
+
+export function notifyPublicContentChanged(detail = {}) {
+  invalidatePublicCache()
+
+  if (typeof window === 'undefined') {
+    return
+  }
+
+  const payload = { ...detail, timestamp: Date.now() }
+  window.dispatchEvent(new CustomEvent(PUBLIC_CONTENT_CHANGED_EVENT, { detail: payload }))
+
+  try {
+    window.localStorage.setItem(PUBLIC_CONTENT_CHANGED_EVENT, JSON.stringify(payload))
+  } catch {
+    // localStorage can be unavailable in private or locked-down browser contexts.
+  }
+
+  if ('BroadcastChannel' in window) {
+    const channel = new BroadcastChannel(PUBLIC_CONTENT_CHANGED_EVENT)
+    channel.postMessage(payload)
+    window.setTimeout(() => channel.close(), 0)
+  }
 }
 
 function cachedGet(url, options = {}, ttl = 60000) {
@@ -64,7 +101,7 @@ export const settingsAPI = {
 }
 
 export const sectionSettingsAPI = {
-  getPublic: () => cachedGet('/sections', {}, 60000),
+  getPublic: () => cachedGet('/sections', {}, 0),
 }
 
 export const coachAPI = {

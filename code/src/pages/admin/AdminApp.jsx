@@ -3,6 +3,7 @@ import {
   CreditCard,
   Image,
   LayoutDashboard,
+  ListOrdered,
   LogOut,
   Menu,
   MessageSquareQuote,
@@ -13,8 +14,9 @@ import {
   Users,
   X,
 } from 'lucide-react'
-import { adminAPI, authAPI, setCsrfToken } from '../../api'
+import { adminAPI, authAPI, notifyPublicContentChanged, setCsrfToken } from '../../api'
 import DashboardOverviewModule from './modules/DashboardOverviewModule'
+import SectionOrderModule from './modules/SectionOrderModule'
 import WebsiteContentModule from './modules/WebsiteContentModule'
 import ServicesModule from './modules/ServicesModule'
 import ServiceSectionModule from './modules/ServiceSectionModule'
@@ -224,6 +226,7 @@ const serviceTabConfigs = [
 
 const tabs = [
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard, group: 'عام', description: 'ملخص سريع للطلبات والعملاء والخدمات.' },
+  { id: 'section-order', label: 'ترتيب السكشنات', icon: ListOrdered, group: 'الموقع', description: 'ترتيب كل سكشن وإظهاره أو إخفاؤه من مكان واحد.' },
   { id: 'home', label: 'الرئيسية', icon: Package, group: 'الموقع', description: 'الهيرو، فيديو الخلفية، الإحصائيات، النافبار والفوتر.' },
   ...serviceTabConfigs.map((tab) => ({ ...tab, icon: Package, group: 'سكشنات الخدمات' })),
   { id: 'payment-settings', label: 'إعدادات الدفع', icon: CreditCard, group: 'الدفع والعملاء', description: 'أرقام التحويل ورسائل وتعليمات الدفع التي تظهر للعميل.' },
@@ -392,11 +395,14 @@ export default function AdminApp() {
       .finally(() => setBooting(false))
   }, [])
 
-  const saveSections = async () => {
+  const saveSections = async (nextSections, successMessage = 'تم حفظ محتوى الموقع') => {
+    const sectionsToSave = Array.isArray(nextSections) ? nextSections : sections
+
     setSaving('sections-save')
     try {
-      await adminAPI.updateSectionSettings(sections)
-      setFlash('تم حفظ محتوى الموقع')
+      await adminAPI.updateSectionSettings(sectionsToSave)
+      notifyPublicContentChanged({ scope: 'sections' })
+      setFlash(successMessage)
     } catch (error) {
       handleError(error, 'تعذر حفظ محتوى الموقع')
     } finally {
@@ -813,6 +819,15 @@ export default function AdminApp() {
           {message ? <div className="rounded-2xl border border-hunter-green/20 bg-hunter-green/15 px-4 py-3 text-hunter-green">{message}</div> : null}
 
           {activeTab === 'overview' ? <DashboardOverviewModule dashboard={dashboard} servicesCount={services.length} pendingOrders={pendingOrders} /> : null}
+          {activeTab === 'section-order' ? (
+            <SectionOrderModule
+              sections={sections}
+              setSections={setSections}
+              onSave={saveSections}
+              onAutoSave={(nextSections) => saveSections(nextSections, 'تم حفظ ترتيب وظهور السكشنات')}
+              saving={saving === 'sections-save'}
+            />
+          ) : null}
           {activeTab === 'home' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} media={media} contentSectionKeys={[]} /> : null}
           {activeServiceTab ? (
             <>

@@ -1,4 +1,4 @@
-import { ActionButton, Field, SectionCard, TextArea, Toggle } from './shared/AdminUI'
+import { ActionButton, Field, SectionCard, TextArea } from './shared/AdminUI'
 
 export default function ServiceSectionModule({ sectionKey, title, sections, setSections, onSave, saving }) {
   const section = sections.find((item) => item.section_key === sectionKey)
@@ -21,13 +21,11 @@ export default function ServiceSectionModule({ sectionKey, title, sections, setS
       }
     >
       <p className="mb-5 text-sm leading-7 text-slate-400">
-        هذه البيانات تتحكم في عنوان السكشن ووصفه وترتيبه وظهوره في الصفحة الرئيسية. الكروت والمنتجات الخاصة به موجودة أسفلها في نفس التبويب.
+        هذه البيانات تتحكم في عنوان السكشن ووصفه وأزراره. ترتيب السكشن وإظهاره أو إخفاؤه موجودان في صفحة ترتيب السكشنات.
       </p>
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
         <Field label="عنوان السكشن بالإنجليزية" value={section.title_en || ''} onChange={(event) => updateSection({ title_en: event.target.value })} />
         <Field label="عنوان السكشن بالعربية" value={section.title_ar || ''} onChange={(event) => updateSection({ title_ar: event.target.value })} />
-        <Field label="الترتيب في الصفحة" type="number" value={section.sort_order || 0} onChange={(event) => updateSection({ sort_order: Number(event.target.value) })} />
-        <Toggle label="إظهار السكشن" checked={!!section.is_visible} onChange={(value) => updateSection({ is_visible: value ? 1 : 0 })} />
         <TextArea label="وصف السكشن بالإنجليزية" className="xl:col-span-2" value={section.subtitle_en || ''} onChange={(event) => updateSection({ subtitle_en: event.target.value })} />
         <TextArea label="وصف السكشن بالعربية" className="xl:col-span-2" value={section.subtitle_ar || ''} onChange={(event) => updateSection({ subtitle_ar: event.target.value })} />
         <TextArea label="محتوى إضافي بالإنجليزية" className="xl:col-span-2" value={section.body_en || ''} onChange={(event) => updateSection({ body_en: event.target.value })} />

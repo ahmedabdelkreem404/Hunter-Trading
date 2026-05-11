@@ -10,7 +10,7 @@ export function ThemeProvider({ children }) {
         return saved === "dark"
       }
 
-      return window.matchMedia("(prefers-color-scheme: dark)").matches
+      return true
     }
     return true
   })
