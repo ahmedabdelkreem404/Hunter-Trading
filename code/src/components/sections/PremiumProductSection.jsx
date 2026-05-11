@@ -96,7 +96,7 @@ function ProductCardMedia({ product, title, compact = false }) {
   const mediaType = product.card_media_type || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
   const fallbackImageUrl = product.thumbnail_url || product.cover_url || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
-  const mediaClassName = 'aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.02]'
+  const mediaClassName = 'aspect-[16/10] w-full object-cover transition duration-500 group-hover:scale-[1.02]'
 
   if (mediaType === 'video' && explicitMediaUrl) {
     return (
@@ -118,7 +118,7 @@ function ProductCardMedia({ product, title, compact = false }) {
       <iframe
         src={explicitMediaUrl}
         title={title}
-        className="aspect-[4/3] w-full"
+        className="aspect-[16/10] w-full"
         loading="lazy"
         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
         allowFullScreen
@@ -137,8 +137,8 @@ function ProductCardMedia({ product, title, compact = false }) {
   }
 
   return (
-    <div className="flex aspect-[4/3] w-full items-center justify-center">
-      <Package2 className="h-8 w-8 text-hunter-text sm:h-14 sm:w-14" />
+    <div className="flex aspect-[16/10] w-full items-center justify-center">
+      <Package2 className="h-12 w-12 text-hunter-text sm:h-14 sm:w-14" />
     </div>
   )
 }
@@ -247,12 +247,12 @@ export default function PremiumProductSection({
     if (!showExpandToggle || showAll) return products
     return products.slice(0, 3)
   }, [products, showAll, showExpandToggle])
-  const gridClassName = 'grid grid-cols-2 gap-3 sm:gap-6 xl:grid-cols-3'
+  const gridClassName = 'grid grid-cols-1 gap-5 sm:grid-cols-2 sm:gap-6 xl:grid-cols-3'
 
   return (
     <section
       id={sectionId}
-      className="relative overflow-hidden bg-hunter-card py-20 md:py-32"
+      className="relative overflow-hidden bg-hunter-card py-14 md:py-24 xl:py-32"
       style={{
         '--product-accent': meta.accent,
         '--product-accent-strong': meta.accentStrong,
@@ -271,7 +271,7 @@ export default function PremiumProductSection({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto mb-12 max-w-4xl text-center"
+          className="mx-auto mb-10 max-w-3xl text-center md:mb-12"
         >
           <div className="mb-4 flex justify-center">
             <TopChip icon={Icon}>{badgeLabel}</TopChip>
@@ -287,13 +287,16 @@ export default function PremiumProductSection({
                 const features = getFeatures(product, isArabic)
                 const ribbonText = isArabic ? product.badge_text_ar || product.badge_text_en : product.badge_text_en || product.badge_text_ar
                 const productTitle = isArabic ? product.title_ar || product.title_en : product.title_en || product.title_ar
+                const productDescription = isArabic
+                  ? product.short_description_ar || product.subtitle_ar || product.short_description_en || product.subtitle_en
+                  : product.short_description_en || product.subtitle_en || product.short_description_ar || product.subtitle_ar
                 const isScalp = category === 'scalp' || product.type === 'scalp'
                 const action = resolveCardAction(product, isScalp)
                 const detailsLabel = isArabic ? product.details_button_label_ar || 'التفاصيل' : product.details_button_label_en || 'Details'
 
                 const compactScalp = isScalp
                 const ctaLabel = getCardCtaLabel(product, isScalp, isArabic)
-                const visibleFeatures = compactScalp ? features.slice(0, 2) : features
+                const visibleFeatures = features.slice(0, compactScalp ? 2 : 3)
                 const singleCard = visibleProducts.length === 1
 
                 return (
@@ -303,8 +306,8 @@ export default function PremiumProductSection({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.45, delay: index * 0.06 }}
-                    className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-2.5 shadow-[0_24px_60px_rgba(0,0,0,0.16)] sm:rounded-[2rem] sm:p-4 ${
-                      singleCard ? 'col-span-2 mx-auto w-full max-w-[18rem] sm:max-w-sm xl:col-span-1' : ''
+                    className={`group relative overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-3.5 shadow-[0_24px_60px_rgba(0,0,0,0.16)] sm:rounded-[2rem] sm:p-4 ${
+                      singleCard ? 'mx-auto w-full max-w-md sm:col-span-2 xl:col-span-1' : ''
                     }`}
                   >
                     <div
@@ -335,7 +338,7 @@ export default function PremiumProductSection({
                       </>
                     ) : null}
 
-                    <div className="relative z-10 rounded-2xl border border-white/10 bg-[color:var(--bg-secondary)]/55 p-2.5 sm:rounded-[1.65rem] sm:p-5">
+                    <div className="relative z-10 rounded-2xl border border-white/10 bg-[color:var(--bg-secondary)]/55 p-4 sm:rounded-[1.65rem] sm:p-5">
                       <div className={`mb-3 flex items-center gap-2 sm:mb-4 sm:gap-3 ${isOffers ? 'justify-between' : 'justify-center'}`}>
                         {isOffers ? (
                           <>
@@ -348,7 +351,7 @@ export default function PremiumProductSection({
                       </div>
 
                       <div
-                        className="relative mb-4 overflow-hidden rounded-2xl border border-white/10 sm:mb-5 sm:rounded-[1.3rem]"
+                        className="relative mb-5 overflow-hidden rounded-2xl border border-white/10 sm:rounded-[1.3rem]"
                         style={{
                           background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 95%, white 5%) 0%, color-mix(in srgb, var(--bg-secondary) 98%, transparent) 100%)',
                         }}
@@ -357,24 +360,29 @@ export default function PremiumProductSection({
                       </div>
 
                       <div className={centerCardContent ? 'text-center' : 'text-center sm:text-start'}>
-                        <h3 className="min-h-[2.35rem] break-words font-heading text-[clamp(0.82rem,3.7vw,1rem)] font-bold leading-tight text-hunter-text sm:min-h-0 sm:text-2xl">{productTitle}</h3>
+                        <h3 className="break-words font-heading text-[1.55rem] font-bold leading-tight text-hunter-text sm:text-2xl">{productTitle}</h3>
+                        {productDescription ? (
+                          <p className="mx-auto mt-3 max-w-md text-sm leading-7 text-hunter-text-muted sm:mx-0">
+                            {productDescription}
+                          </p>
+                        ) : null}
                         {isScalp ? (
                           <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-semibold text-hunter-text-muted sm:mt-3">
                             {isArabic ? 'روابط ريفرال' : 'Referral links'}
                           </div>
                         ) : (
-                          <div className="mt-2 font-heading text-[clamp(1.15rem,6vw,1.5rem)] font-bold sm:mt-3 sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
+                          <div className="mt-3 font-heading text-3xl font-bold sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
                             {formatMoney(product.price, product.currency)}
                           </div>
                         )}
                       </div>
 
                       {visibleFeatures.length > 0 ? (
-                        <div className={`mt-5 hidden space-y-2.5 sm:block ${centerCardContent ? 'mx-auto max-w-xs' : ''}`}>
+                        <div className={`mt-5 space-y-3 ${centerCardContent ? 'mx-auto max-w-md' : ''}`}>
                           {visibleFeatures.map((feature, featureIndex) => (
                             <div
                               key={`${product.id}-feature-${featureIndex}`}
-                              className={`flex items-start gap-2 text-sm leading-6 text-hunter-text-muted ${centerCardContent ? 'justify-center text-center' : ''}`}
+                              className={`flex items-start gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2 text-sm leading-6 text-hunter-text-muted ${centerCardContent ? 'justify-center text-center' : ''}`}
                             >
                               <CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0" style={{ color: 'var(--product-accent)' }} />
                               <span>{feature}</span>
@@ -383,17 +391,17 @@ export default function PremiumProductSection({
                         </div>
                       ) : null}
 
-                      <div className="mt-4 flex gap-2 sm:mt-6">
+                      <div className="mt-5 flex gap-3 sm:mt-6">
                         <CardAction
                           action={action}
-                          className="inline-flex min-w-0 flex-1 items-center justify-center gap-2 rounded-xl px-2 py-2 text-center text-[clamp(0.68rem,3vw,0.75rem)] font-semibold leading-tight text-hunter-bg transition hover:-translate-y-0.5 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base"
+                          className="inline-flex min-h-12 min-w-0 flex-1 items-center justify-center gap-2 rounded-2xl px-4 py-3 text-center text-base font-semibold leading-tight text-hunter-bg transition hover:-translate-y-0.5"
                           style={{
                             background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
                             boxShadow: '0 10px 22px color-mix(in srgb, var(--product-accent) 14%, transparent)',
                           }}
                         >
                           <span className="leading-tight sm:truncate">{ctaLabel}</span>
-                          <ArrowRight className="hidden h-4 w-4 shrink-0 rtl:rotate-180 sm:block" />
+                          <ArrowRight className="h-4 w-4 shrink-0 rtl:rotate-180" />
                         </CardAction>
 
                         {isScalp ? (
@@ -401,7 +409,7 @@ export default function PremiumProductSection({
                             to={`/services/${product.slug}`}
                             aria-label={`${detailsLabel}: ${productTitle}`}
                             title={detailsLabel}
-                            className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green sm:h-12 sm:w-12 sm:rounded-2xl"
+                            className="inline-flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green"
                           >
                             <Info className="h-5 w-5" />
                           </Link>

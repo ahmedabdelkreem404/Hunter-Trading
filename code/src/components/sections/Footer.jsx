@@ -77,7 +77,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
       href={link.href}
       target={link.newTab ? '_blank' : undefined}
       rel={link.newTab ? 'noreferrer' : undefined}
-      className="text-hunter-text-muted transition-colors hover:text-hunter-green"
+      className="inline-flex py-1 text-base leading-7 text-hunter-text-muted transition-colors hover:text-hunter-green md:text-sm"
     >
       {link.name}
     </a>
@@ -85,8 +85,8 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
 
   return (
     <footer className="border-t border-white/10 bg-hunter-bg">
-      <div className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
-        <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
+      <div className="mx-auto max-w-7xl px-4 py-14 sm:px-6 md:py-16 lg:px-8">
+        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4 lg:gap-12">
           <div className="lg:col-span-1">
             <div className="mb-4 flex items-center gap-2">
               {siteLogo ? (
@@ -100,7 +100,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
               )}
               <span className="font-heading text-xl font-bold text-hunter-text">{general.website_name?.value || 'Hunter Trading'}</span>
             </div>
-            <p className="mb-6 max-w-sm text-sm leading-7 text-hunter-text-muted">{footerDescription}</p>
+            <p className="mb-6 max-w-sm text-base leading-8 text-hunter-text-muted md:text-sm md:leading-7">{footerDescription}</p>
 
             <div className="flex flex-wrap gap-3">
               {socialLinks.map((social) => {
@@ -112,7 +112,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
                     href={normalizeSocialUrl(social.url)}
                     target="_blank"
                     rel="noreferrer"
-                    className="flex h-11 w-11 items-center justify-center rounded-xl border transition hover:-translate-y-0.5 hover:shadow-lg"
+                    className="flex h-12 w-12 items-center justify-center rounded-xl border transition hover:-translate-y-0.5 hover:shadow-lg md:h-11 md:w-11"
                     style={{
                       color: brand.color,
                       background: brand.background,
@@ -129,26 +129,26 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
             </div>
           </div>
 
-          <div>
-            <h4 className="mb-4 font-heading font-semibold text-hunter-text">{t('footer.quick_links')}</h4>
-            <ul className="space-y-2">
+          <div className="border-t border-white/10 pt-6 md:border-t-0 md:pt-0">
+            <h4 className="mb-4 font-heading text-lg font-semibold text-hunter-text md:text-base">{t('footer.quick_links')}</h4>
+            <ul className="space-y-3 md:space-y-2">
               {quickLinks.map((link) => <li key={`${link.name}-${link.href}`}>{renderLink(link)}</li>)}
             </ul>
           </div>
 
-          <div>
-            <h4 className="mb-4 font-heading font-semibold text-hunter-text">{t('footer.legal')}</h4>
-            <ul className="space-y-2">
+          <div className="border-t border-white/10 pt-6 md:border-t-0 md:pt-0">
+            <h4 className="mb-4 font-heading text-lg font-semibold text-hunter-text md:text-base">{t('footer.legal')}</h4>
+            <ul className="space-y-3 md:space-y-2">
               {legalItems.map((link) => <li key={`${link.name}-${link.href}`}>{renderLink(link)}</li>)}
             </ul>
           </div>
 
-          <div>
-            <h4 className="mb-4 font-heading font-semibold text-hunter-text">{currentLanguage === 'ar' ? 'التواصل' : 'Contact'}</h4>
-            <ul className="space-y-3">
+          <div className="border-t border-white/10 pt-6 md:border-t-0 md:pt-0">
+            <h4 className="mb-4 font-heading text-lg font-semibold text-hunter-text md:text-base">{currentLanguage === 'ar' ? 'التواصل' : 'Contact'}</h4>
+            <ul className="space-y-4 md:space-y-3">
               <li className="flex items-start gap-3 text-hunter-text-muted">
                 <Mail className="mt-0.5 h-5 w-5 text-hunter-green" />
-                <span className="break-all">{general.support_email?.value || 'support@huntertrading.com'}</span>
+                <span className="break-all leading-7">{general.support_email?.value || 'support@huntertrading.com'}</span>
               </li>
               <li className="flex items-start gap-3 text-hunter-text-muted">
                 <MapPin className="mt-0.5 h-5 w-5 text-hunter-green" />
@@ -163,7 +163,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
         <div className="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8">
           <div className="flex items-start gap-3 rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-4 sm:p-5">
             <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-hunter-orange" />
-            <div className="text-sm leading-7 text-hunter-text-muted">
+            <div className="text-sm leading-7 text-hunter-text-muted sm:text-base">
               <strong className="text-hunter-orange">{riskWarningTitle}:</strong> {riskWarningContent}
             </div>
           </div>
@@ -171,7 +171,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
       </div>
 
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-6 text-center sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-7xl px-4 pb-28 pt-6 text-center sm:px-6 sm:pb-6 lg:px-8">
           <p className="text-sm text-hunter-text-muted">
             © {currentYear} {general.website_name?.value || 'Hunter Trading'}. {t('footer.copyright')}
           </p>

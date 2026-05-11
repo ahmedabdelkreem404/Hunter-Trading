@@ -1,4 +1,5 @@
 import { motion } from 'framer-motion'
+import { useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { settingsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
@@ -19,6 +20,7 @@ const WhatsAppIcon = () => (
 
 export default function TelegramFloating() {
   const { t, i18n } = useTranslation()
+  const [isFooterVisible, setIsFooterVisible] = useState(false)
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
     {},
@@ -40,6 +42,23 @@ export default function TelegramFloating() {
   const handleWhatsAppClick = () => {
     if (!whatsappUrl) return
     window.open(whatsappUrl, '_blank')
+  }
+
+  useEffect(() => {
+    const footer = document.querySelector('footer')
+    if (!footer || !('IntersectionObserver' in window)) return undefined
+
+    const observer = new IntersectionObserver(
+      ([entry]) => setIsFooterVisible(entry.isIntersecting),
+      { threshold: 0.08 }
+    )
+
+    observer.observe(footer)
+    return () => observer.disconnect()
+  }, [])
+
+  if (isFooterVisible) {
+    return null
   }
 
   return (

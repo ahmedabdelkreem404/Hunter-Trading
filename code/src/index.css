@@ -107,11 +107,11 @@
   }
   
   .section-title {
-    @apply font-heading text-3xl md:text-4xl font-bold text-hunter-text mb-4;
+    @apply font-heading text-2xl leading-tight sm:text-3xl md:text-4xl font-bold text-hunter-text mb-4;
   }
   
   .section-subtitle {
-    @apply text-hunter-text-muted text-lg max-w-2xl mx-auto;
+    @apply text-hunter-text-muted text-base leading-8 sm:text-lg max-w-2xl mx-auto;
   }
   
   .glass {
