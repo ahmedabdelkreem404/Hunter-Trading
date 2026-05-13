@@ -19,7 +19,7 @@ const WhatsAppIcon = () => (
 )
 
 export default function TelegramFloating() {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const [isSuppressed, setIsSuppressed] = useState(false)
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
@@ -31,9 +31,14 @@ export default function TelegramFloating() {
   const telegramUrl =
     settings.general?.telegram_url?.value ||
     settings.general?.free_telegram_url?.value ||
-    'https://t.me/hunter_tradeing'
+    ''
   const whatsappUrl = settings.general?.whatsapp_url?.value || ''
-  const whatsappLabel = i18n.language === 'ar' ? 'تواصل واتساب' : 'WhatsApp'
+  const telegramLabel = i18n.language === 'ar'
+    ? settings.general?.telegram_label_ar?.value || settings.general?.telegram_label?.value || ''
+    : settings.general?.telegram_label_en?.value || settings.general?.telegram_label?.value || ''
+  const whatsappLabel = i18n.language === 'ar'
+    ? settings.general?.whatsapp_label_ar?.value || settings.general?.whatsapp_label?.value || ''
+    : settings.general?.whatsapp_label_en?.value || settings.general?.whatsapp_label?.value || ''
 
   const handleTelegramClick = () => {
     window.open(telegramUrl, '_blank')
@@ -45,35 +50,39 @@ export default function TelegramFloating() {
   }
 
   useEffect(() => {
-    if (!('IntersectionObserver' in window)) return undefined
+    let frameId = 0
+    const suppressedSelectors = '#funded, #vip, #scalp, #courses, #offers, #coach, #testimonials, footer'
 
-    const observedElements = [
-      ...document.querySelectorAll('#funded, #vip, #scalp, #courses, #offers, footer'),
-    ]
+    const updateSuppression = () => {
+      window.cancelAnimationFrame(frameId)
+      frameId = window.requestAnimationFrame(() => {
+        const elements = [...document.querySelectorAll(suppressedSelectors)]
+        const viewportHeight = window.innerHeight || document.documentElement.clientHeight || 0
+        const topSafeArea = window.matchMedia('(max-width: 767px)').matches ? 72 : 96
+        const bottomSafeArea = window.matchMedia('(max-width: 767px)').matches ? 96 : 128
+        const isOverContent = elements.some((element) => {
+          const rect = element.getBoundingClientRect()
+          return rect.bottom > topSafeArea && rect.top < viewportHeight - bottomSafeArea
+        })
 
-    if (observedElements.length === 0) return undefined
-
-    const visibleElements = new Set()
-
-    const observer = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (entry.isIntersecting) {
-          visibleElements.add(entry.target)
-        } else {
-          visibleElements.delete(entry.target)
-        }
+        setIsSuppressed(isOverContent)
       })
-      setIsSuppressed(visibleElements.size > 0)
-    }, {
-      rootMargin: '-72px 0px -18% 0px',
-      threshold: 0.1,
-    })
+    }
 
-    observedElements.forEach((element) => observer.observe(element))
-    return () => observer.disconnect()
+    updateSuppression()
+    const lateCheck = window.setTimeout(updateSuppression, 700)
+    window.addEventListener('scroll', updateSuppression, { passive: true })
+    window.addEventListener('resize', updateSuppression)
+
+    return () => {
+      window.clearTimeout(lateCheck)
+      window.cancelAnimationFrame(frameId)
+      window.removeEventListener('scroll', updateSuppression)
+      window.removeEventListener('resize', updateSuppression)
+    }
   }, [])
 
-  if (isSuppressed) {
+  if (isSuppressed || (!telegramUrl && !whatsappUrl)) {
     return null
   }
 
@@ -84,6 +93,7 @@ export default function TelegramFloating() {
       transition={{ delay: 1.5, duration: 0.5 }}
       className="fixed bottom-5 right-4 z-50 flex flex-col gap-2 sm:bottom-8 sm:right-8 sm:gap-3"
     >
+      {telegramUrl ? (
       <motion.button
         onClick={handleTelegramClick}
         whileHover={{ scale: 1.1 }}
@@ -110,10 +120,11 @@ export default function TelegramFloating() {
         
         {/* Tooltip */}
         <div className="absolute right-full mr-3 px-3 py-2 bg-hunter-card rounded-lg text-sm text-hunter-text whitespace-nowrap opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-200">
-          {t('hero.cta_telegram')}
+          {telegramLabel}
           <div className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-1/2 rotate-45 w-2 h-2 bg-hunter-card" />
         </div>
       </motion.button>
+      ) : null}
 
       {whatsappUrl && (
         <motion.button

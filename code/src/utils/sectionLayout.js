@@ -1,13 +1,13 @@
 export const HOMEPAGE_SECTION_DEFINITIONS = [
-  { id: 'hero', sectionKey: 'hero', label_en: 'Home', label_ar: 'الرئيسية', label: 'Home', anchor: 'home', showInNav: true },
-  { id: 'funded', sectionKey: 'funded', label_en: 'Funded Accounts', label_ar: 'الحسابات الممولة', label: 'Funded Accounts', anchor: 'funded', showInNav: true },
-  { id: 'vip', sectionKey: 'vip', label_en: 'VIP', label_ar: 'VIP', label: 'VIP', anchor: 'vip', showInNav: true },
-  { id: 'coach', sectionKey: 'coach', label_en: 'Coach', label_ar: 'المدرب', label: 'Coach', anchor: 'coach', showInNav: false },
-  { id: 'testimonials', sectionKey: 'testimonials', label_en: 'Testimonials', label_ar: 'آراء العملاء', label: 'Testimonials', anchor: 'testimonials', showInNav: false },
-  { id: 'market', sectionKey: 'market', label_en: 'Market Watch', label_ar: 'تابع السوق', label: 'Market Watch', anchor: 'market', showInNav: false },
-  { id: 'scalp', sectionKey: 'scalp', label_en: 'Scalp', label_ar: 'سكالب', label: 'Scalp', anchor: 'scalp', showInNav: true },
-  { id: 'courses', sectionKey: 'courses', label_en: 'Courses', label_ar: 'الدورات', label: 'Courses', anchor: 'courses', showInNav: true },
-  { id: 'offers', sectionKey: 'offers', label_en: 'Offers', label_ar: 'العروض', label: 'Offers', anchor: 'offers', showInNav: true },
+  { id: 'hero', sectionKey: 'hero', label_en: '', label_ar: '', label: '', anchor: 'home', showInNav: true },
+  { id: 'funded', sectionKey: 'funded', label_en: '', label_ar: '', label: '', anchor: 'funded', showInNav: true },
+  { id: 'vip', sectionKey: 'vip', label_en: '', label_ar: '', label: '', anchor: 'vip', showInNav: true },
+  { id: 'coach', sectionKey: 'coach', label_en: '', label_ar: '', label: '', anchor: 'coach', showInNav: true },
+  { id: 'testimonials', sectionKey: 'testimonials', label_en: '', label_ar: '', label: '', anchor: 'testimonials', showInNav: false },
+  { id: 'market', sectionKey: 'market', label_en: '', label_ar: '', label: '', anchor: 'market', showInNav: false },
+  { id: 'scalp', sectionKey: 'scalp', label_en: '', label_ar: '', label: '', anchor: 'scalp', showInNav: true },
+  { id: 'courses', sectionKey: 'courses', label_en: '', label_ar: '', label: '', anchor: 'courses', showInNav: true },
+  { id: 'offers', sectionKey: 'offers', label_en: '', label_ar: '', label: '', anchor: 'offers', showInNav: true },
 ]
 
 export const DEFAULT_HOMEPAGE_LAYOUT = HOMEPAGE_SECTION_DEFINITIONS.map((section, index) => ({
@@ -24,13 +24,13 @@ function hasLegacyLayoutItems(layout) {
 }
 
 export function parseHomepageLayout(rawValue) {
-  if (!rawValue) return DEFAULT_HOMEPAGE_LAYOUT
+  if (!rawValue) return []
 
   try {
     const parsed = typeof rawValue === 'string' ? JSON.parse(rawValue) : rawValue
     return normalizeHomepageLayout(parsed)
   } catch {
-    return DEFAULT_HOMEPAGE_LAYOUT
+    return []
   }
 }
 
@@ -81,10 +81,14 @@ export function buildHomepageSectionsFromSettings(sectionSettings = []) {
   const settingsByKey = Object.fromEntries((Array.isArray(sectionSettings) ? sectionSettings : []).map((item) => [item.section_key, item]))
 
   return HOMEPAGE_SECTION_DEFINITIONS
+    .filter((definition) => settingsByKey[definition.sectionKey])
     .map((definition, index) => {
-      const setting = settingsByKey[definition.sectionKey] ?? {}
+      const setting = settingsByKey[definition.sectionKey]
       return {
         ...definition,
+        label_ar: setting.title_ar || '',
+        label_en: setting.title_en || '',
+        label: setting.title_en || setting.title_ar || '',
         enabled: setting.is_visible !== false && setting.is_visible !== 0,
         order: Number.isFinite(Number(setting.sort_order)) ? Number(setting.sort_order) : index + 1,
       }

@@ -21,26 +21,7 @@ class SettingsController {
             )
         ");
 
-        $count = fetchOne("SELECT COUNT(*) AS total FROM coach_social_links");
-        if ((int) ($count['total'] ?? 0) > 0) {
-            return;
-        }
-
-        $defaults = [
-            ['telegram', 'Telegram', 'https://t.me/hunter_tradeing', 1, 1],
-            ['instagram', 'Instagram', 'https://instagram.com/hunter_tradeing', 2, 1],
-            ['youtube', 'YouTube', 'https://youtube.com/@hunter_tradeing', 3, 1],
-            ['facebook', 'Facebook', 'https://facebook.com/hunter_tradeing', 4, 0],
-            ['twitter', 'X / Twitter', 'https://x.com/hunter_tradeing', 5, 0],
-            ['whatsapp', 'WhatsApp', 'https://wa.me/201000000000', 6, 0]
-        ];
-
-        foreach ($defaults as [$platform, $label, $url, $sortOrder, $isEnabled]) {
-            insert(
-                "INSERT INTO coach_social_links (platform, label, url, sort_order, is_enabled) VALUES (?, ?, ?, ?, ?)",
-                [$platform, $label, $url, $sortOrder, $isEnabled]
-            );
-        }
+        // Runtime must never seed demo social links. The dashboard/database are the source of truth.
     }
 
     private function getCoachSocialLinksRows(bool $onlyEnabled = false) {
@@ -262,20 +243,9 @@ class SettingsController {
             $socialLinks = $this->getCoachSocialLinksRows(true);
             
             if (!$profile) {
-                // Return default if no profile exists
                 return json_encode([
                     'success' => true,
                     'data' => [
-                        'name_en' => 'Ahmed Hunter',
-                        'name_ar' => 'أحمد هانتر',
-                        'title_en' => 'Professional Trading Coach',
-                        'title_ar' => 'مدرب تداول محترف',
-                        'bio_en' => 'After losing $50,000 in my first year of trading, I decided to dedicate my life to mastering the markets.',
-                        'bio_ar' => 'بعد خسارة 50,000 دولار في سنتي الأولى في التداول، قررت تكريس حياتي لإتقان الأسواق.',
-                        'image_url' => null,
-                        'experience_years' => 8,
-                        'students_count' => 10000,
-                        'profit_shared' => '$2M+',
                         'social_links' => $socialLinks
                     ]
                 ]);

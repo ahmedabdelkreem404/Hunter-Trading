@@ -1,10 +1,11 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   CreditCard,
   Image,
   LayoutDashboard,
   ListOrdered,
   LogOut,
+  Languages,
   Menu,
   MessageSquareQuote,
   Package,
@@ -28,6 +29,8 @@ import CoachSocialModule from './modules/CoachSocialModule'
 import SettingsModule from './modules/SettingsModule'
 import MediaLibraryModule from './modules/MediaLibraryModule'
 import LeadsModule from './modules/LeadsModule'
+import TranslationsModule from './modules/TranslationsModule'
+import { AdminFieldLanguageProvider, DeleteConfirmDialog, confirmDelete } from './modules/shared/AdminUI'
 
 const emptyService = {
   type: 'vip',
@@ -56,12 +59,17 @@ const emptyService = {
   cover_url: '',
   cover_media_type: 'image',
   cover_video_poster_url: '',
+  cover_video_autoplay: true,
+  cover_video_muted: true,
+  cover_video_loop: true,
+  cover_video_controls: false,
   card_media_type: 'image',
   card_media_url: '',
   card_video_poster_url: '',
-  card_video_autoplay: false,
+  card_video_autoplay: true,
   card_video_muted: true,
   card_video_loop: true,
+  card_video_controls: false,
   offer_starts_at: '',
   offer_ends_at: '',
   terms_title_en: '',
@@ -70,7 +78,7 @@ const emptyService = {
   terms_content_ar: '',
   risk_warning_en: '',
   risk_warning_ar: '',
-  important_links: [{ label_en: '', label_ar: '', url: '', new_tab: true, sort_order: 1 }],
+  important_links: [{ label_en: '', label_ar: '', url: '', is_visible: true, new_tab: true, sort_order: 1 }],
   details_button_label_en: '',
   details_button_label_ar: 'التفاصيل',
   final_cta_label_en: '',
@@ -131,7 +139,7 @@ const defaultCoach = {
 }
 
 const defaultSettings = {
-  website_name: 'Hunter Trading',
+  website_name: '',
   support_email: '',
   telegram_url: '',
   whatsapp_url: '',
@@ -140,6 +148,7 @@ const defaultSettings = {
   vodafone_cash_number: '',
   vodafone_cash_account_name: '',
   bank_transfer_details: '',
+  payment_methods_json: '',
   payment_instructions_ar: '',
   payment_instructions_en: '',
   instagram_url: '',
@@ -186,9 +195,18 @@ const defaultSettings = {
   primary_color: '#00ff88',
   primary_color_strong: '#00cc6a',
   accent_blue: '#0066ff',
+  accent_orange: '#ff6b35',
+  accent_orange_strong: '#ff8c42',
   background_dark: '#0a0a0f',
   card_dark: '#12121a',
   text_dark: '#ffffff',
+  text_muted_dark: '#8a8a9a',
+  product_card_shell_bg: '#0a0a0f',
+  product_card_surface_bg: '#12121a',
+  product_card_border_color: '#2a2a36',
+  product_card_title_color: '#ffffff',
+  product_card_body_color: '#9ca3af',
+  product_card_button_text_color: '#050509',
 }
 
 const serviceTabConfigs = [
@@ -233,6 +251,7 @@ const tabs = [
   { id: 'orders', label: 'طلبات الدفع', icon: CreditCard, group: 'الدفع والعملاء', description: 'مراجعة من دفع، حالة الطلب، الإيصال، ورابط التحويل بعد الموافقة.' },
   { id: 'leads', label: 'العملاء المحتملون', icon: Users, group: 'الدفع والعملاء', description: 'كل بيانات العملاء المرسلة من الموقع.' },
   { id: 'settings', label: 'إعدادات الموقع', icon: Settings, group: 'إعدادات وإضافات', description: 'اللوجو، الألوان، السوشيال، القانوني والفوتر.' },
+  { id: 'translations', label: 'الترجمات', icon: Languages, group: 'إعدادات وإضافات', description: 'ترجمة كل المحتوى العربي إلى الإنجليزية من مكان واحد.' },
   { id: 'media', label: 'مكتبة الوسائط', icon: Image, group: 'إعدادات وإضافات', description: 'رفع الصور والفيديوهات واستخدامها في أي سكشن.' },
   { id: 'coach', label: 'المدرب', icon: UserSquare2, group: 'إعدادات وإضافات', description: 'بيانات المدرب وصورته ومحتوى سكشن الكوتش.' },
   { id: 'testimonials', label: 'آراء العملاء', icon: MessageSquareQuote, group: 'إعدادات وإضافات', description: 'إضافة وتعديل آراء العملاء المرتبطة بالخدمات.' },
@@ -251,6 +270,33 @@ function fromDateTimeLocal(value) {
   return value.includes('T') ? `${value.replace('T', ' ')}:00` : value
 }
 
+function buildServiceMediaPatch(uploadedUrl, mediaType, target = 'card_media_url') {
+  const mediaPatchByTarget = {
+    card_media_url: {
+      card_media_url: uploadedUrl,
+      card_media_type: mediaType,
+      ...(mediaType === 'image' ? { thumbnail_url: uploadedUrl } : {}),
+    },
+    card_video_poster_url: { card_video_poster_url: uploadedUrl },
+    cover_url: {
+      cover_url: uploadedUrl,
+      cover_media_type: mediaType,
+    },
+    cover_video_poster_url: { cover_video_poster_url: uploadedUrl },
+  }
+
+  return mediaPatchByTarget[target] || mediaPatchByTarget.card_media_url
+}
+
+function updateRelationItem(list, index, changes) {
+  const next = Array.isArray(list) ? [...list] : []
+  while (next.length <= index) {
+    next.push({})
+  }
+  next[index] = { ...next[index], ...changes }
+  return next
+}
+
 function mapSettings(response) {
   const general = response.data?.general ?? {}
   return {
@@ -262,7 +308,10 @@ function mapSettings(response) {
 export default function AdminApp() {
   const [activeTab, setActiveTab] = useState('overview')
   const [sidebarOpen, setSidebarOpen] = useState(false)
+  const mainScrollRef = useRef(null)
+  const mainContentRef = useRef(null)
   const [booting, setBooting] = useState(true)
+  const [loadFailed, setLoadFailed] = useState(false)
   const [saving, setSaving] = useState('')
   const [message, setMessage] = useState('')
 
@@ -292,6 +341,81 @@ export default function AdminApp() {
   const activeServiceTab = serviceTabConfigs.find((tab) => tab.id === activeTab)
   const pendingOrders = useMemo(() => orders.filter((order) => String(order.status || 'pending') === 'pending').length, [orders])
 
+  const clampMainScroll = useCallback(() => {
+    const main = mainScrollRef.current
+    if (!main) return
+
+    const maxScrollTop = Math.max(0, main.scrollHeight - main.clientHeight)
+    if (main.scrollTop > maxScrollTop) {
+      main.scrollTop = maxScrollTop
+    }
+  }, [])
+
+  const scrollMainToTop = useCallback(() => {
+    if (mainScrollRef.current) {
+      mainScrollRef.current.scrollTop = 0
+      mainScrollRef.current.scrollLeft = 0
+    }
+
+    window.requestAnimationFrame(() => {
+      mainScrollRef.current?.scrollTo({ top: 0, left: 0, behavior: 'auto' })
+      window.requestAnimationFrame(clampMainScroll)
+    })
+  }, [clampMainScroll])
+
+  useEffect(() => {
+    scrollMainToTop()
+  }, [activeTab, scrollMainToTop])
+
+  useEffect(() => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(clampMainScroll)
+    })
+  })
+
+  useEffect(() => {
+    const previousBodyOverflow = document.body.style.overflow
+    const previousHtmlOverflow = document.documentElement.style.overflow
+    document.body.style.overflow = 'hidden'
+    document.documentElement.style.overflow = 'hidden'
+
+    const main = mainScrollRef.current
+    const content = mainContentRef.current
+    if (!main || typeof ResizeObserver === 'undefined') {
+      return () => {
+        document.body.style.overflow = previousBodyOverflow
+        document.documentElement.style.overflow = previousHtmlOverflow
+      }
+    }
+
+    const scheduleClamp = () => {
+      window.requestAnimationFrame(() => {
+        window.requestAnimationFrame(clampMainScroll)
+      })
+    }
+
+    const observer = new ResizeObserver(scheduleClamp)
+    observer.observe(main)
+    if (content) observer.observe(content)
+    window.addEventListener('resize', scheduleClamp)
+
+    return () => {
+      observer.disconnect()
+      window.removeEventListener('resize', scheduleClamp)
+      document.body.style.overflow = previousBodyOverflow
+      document.documentElement.style.overflow = previousHtmlOverflow
+    }
+  }, [clampMainScroll])
+
+  const selectAdminTab = (tabId) => {
+    setSidebarOpen(false)
+    if (tabId === activeTab) {
+      scrollMainToTop()
+      return
+    }
+    setActiveTab(tabId)
+  }
+
   const redirectToLogin = () => {
     window.location.href = '/admin/login'
   }
@@ -300,6 +424,10 @@ export default function AdminApp() {
     setMessage(text)
     window.clearTimeout(window.__hunterAdminFlash)
     window.__hunterAdminFlash = window.setTimeout(() => setMessage(''), 2500)
+  }
+
+  const publishPublicUpdate = (scope) => {
+    notifyPublicContentChanged({ scope })
   }
 
   const handleError = (error, fallbackMessage) => {
@@ -391,7 +519,10 @@ export default function AdminApp() {
 
   useEffect(() => {
     loadData()
-      .catch((error) => handleError(error, 'تعذر تحميل لوحة التحكم'))
+      .catch((error) => {
+        setLoadFailed(true)
+        handleError(error, 'تعذر تحميل لوحة التحكم')
+      })
       .finally(() => setBooting(false))
   }, [])
 
@@ -421,6 +552,7 @@ export default function AdminApp() {
         setSiteSettings(nextSettings)
       }
       await adminAPI.updateSettings(nextSettings)
+      publishPublicUpdate('settings')
       setFlash('تم حفظ الإعدادات')
     } catch (error) {
       handleError(error, 'تعذر حفظ الإعدادات')
@@ -445,9 +577,8 @@ export default function AdminApp() {
         const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
         payload = {
           ...payload,
-          card_media_url: upload.data?.url,
-          card_media_type: mediaType,
-          ...(mediaType === 'image' ? { thumbnail_url: upload.data?.url, cover_url: upload.data?.url } : {}),
+          ...buildServiceMediaPatch(upload.data?.url, mediaType, 'card_media_url'),
+          ...(mediaType === 'image' ? { cover_url: upload.data?.url } : {}),
         }
       }
 
@@ -456,6 +587,7 @@ export default function AdminApp() {
       setServiceImageFile(null)
       await refreshServices()
       await refreshMedia()
+      publishPublicUpdate('services')
       setFlash('تم إنشاء الخدمة')
     } catch (error) {
       handleError(error, 'تعذر إنشاء الخدمة')
@@ -473,6 +605,7 @@ export default function AdminApp() {
         offer_ends_at: fromDateTimeLocal(service.offer_ends_at),
       })
       await refreshServices()
+      publishPublicUpdate('services')
       setFlash('تم حفظ الخدمة')
     } catch (error) {
       handleError(error, 'تعذر حفظ الخدمة')
@@ -482,7 +615,7 @@ export default function AdminApp() {
   }
 
   const deleteService = async (id) => {
-    if (!window.confirm('هل تريد حذف هذه الخدمة؟')) {
+    if (!(await confirmDelete('هل تريد حذف هذه الخدمة؟'))) {
       return
     }
 
@@ -490,6 +623,7 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteService(id)
       setServices((current) => current.filter((item) => item.id !== id))
+      publishPublicUpdate('services')
       setFlash('تم حذف الخدمة')
     } catch (error) {
       handleError(error, 'تعذر حذف الخدمة')
@@ -498,27 +632,92 @@ export default function AdminApp() {
     }
   }
 
-  const uploadServiceImage = async (service, file) => {
+  const uploadServiceImage = async (service, file, target = 'card_media_url') => {
     if (!file) return
     setSaving(`service-image-${service.id}`)
     try {
       const upload = await adminAPI.uploadMedia(file)
       const mimetype = upload.data?.mimetype || file.type || ''
       const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
+      const uploadedUrl = upload.data?.url
+      const patch = buildServiceMediaPatch(uploadedUrl, mediaType, target)
+
       setServices((current) =>
         current.map((item) =>
           item.id === service.id
-            ? {
-                ...item,
-                card_media_url: upload.data?.url,
-                card_media_type: mediaType,
-                ...(mediaType === 'image' ? { thumbnail_url: upload.data?.url, cover_url: upload.data?.url } : {}),
-              }
+            ? { ...item, ...patch }
             : item
         )
       )
       await refreshMedia()
       setFlash('تم رفع الوسائط. احفظ الخدمة لتثبيت التغيير.')
+    } catch (error) {
+      handleError(error, 'تعذر رفع الوسائط')
+    } finally {
+      setSaving('')
+    }
+  }
+
+  const uploadServiceDraftMedia = async (file, target = 'card_media_url') => {
+    if (!file) return
+    setSaving(`service-draft-media-${target}`)
+    try {
+      const upload = await adminAPI.uploadMedia(file)
+      const mimetype = upload.data?.mimetype || file.type || ''
+      const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
+      const uploadedUrl = upload.data?.url
+      const patch = buildServiceMediaPatch(uploadedUrl, mediaType, target)
+
+      setServiceDraft((current) => ({ ...current, ...patch }))
+      await refreshMedia()
+      setFlash('تم رفع الوسائط وربطها بنموذج الخدمة الجديدة.')
+    } catch (error) {
+      handleError(error, 'تعذر رفع الوسائط')
+    } finally {
+      setSaving('')
+    }
+  }
+
+  const uploadServiceDraftGalleryMedia = async (index, file) => {
+    if (!file) return
+    setSaving(`service-draft-gallery-${index}`)
+    try {
+      const upload = await adminAPI.uploadMedia(file)
+      const mimetype = upload.data?.mimetype || file.type || ''
+      const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
+      const uploadedUrl = upload.data?.url
+
+      setServiceDraft((current) => ({
+        ...current,
+        media: updateRelationItem(current.media, index, { media_url: uploadedUrl, media_type: mediaType }),
+      }))
+      await refreshMedia()
+      setFlash('تم رفع الوسائط وإضافتها لمعرض الخدمة الجديدة.')
+    } catch (error) {
+      handleError(error, 'تعذر رفع الوسائط')
+    } finally {
+      setSaving('')
+    }
+  }
+
+  const uploadServiceGalleryMedia = async (service, index, file) => {
+    if (!file) return
+    setSaving(`service-gallery-${service.id}-${index}`)
+    try {
+      const upload = await adminAPI.uploadMedia(file)
+      const mimetype = upload.data?.mimetype || file.type || ''
+      const mediaType = mimetype.startsWith('video/') ? 'video' : 'image'
+      const uploadedUrl = upload.data?.url
+
+      setServices((current) =>
+        current.map((item) =>
+          item.id === service.id
+            ? { ...item, media: updateRelationItem(item.media, index, { media_url: uploadedUrl, media_type: mediaType }) }
+            : item
+        )
+      )
+      await refreshMedia()
+      setFlash('تم رفع الوسائط. احفظ الخدمة لتثبيت معرض الوسائط.')
     } catch (error) {
       handleError(error, 'تعذر رفع الوسائط')
     } finally {
@@ -557,6 +756,7 @@ export default function AdminApp() {
       setTestimonialImageFile(null)
       await refreshTestimonials()
       await refreshMedia()
+      publishPublicUpdate('testimonials')
       setFlash('تم إضافة رأي العميل')
     } catch (error) {
       handleError(error, 'تعذر إضافة رأي العميل')
@@ -570,6 +770,7 @@ export default function AdminApp() {
     try {
       await adminAPI.updateTestimonial(testimonial)
       await refreshTestimonials()
+      publishPublicUpdate('testimonials')
       setFlash('تم حفظ رأي العميل')
     } catch (error) {
       handleError(error, 'تعذر حفظ رأي العميل')
@@ -579,7 +780,7 @@ export default function AdminApp() {
   }
 
   const deleteTestimonial = async (id) => {
-    if (!window.confirm('هل تريد حذف رأي العميل؟')) {
+    if (!(await confirmDelete('هل تريد حذف رأي العميل؟'))) {
       return
     }
 
@@ -587,6 +788,7 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteTestimonial(id)
       setTestimonials((current) => current.filter((item) => item.id !== id))
+      publishPublicUpdate('testimonials')
       setFlash('تم حذف رأي العميل')
     } catch (error) {
       handleError(error, 'تعذر حذف رأي العميل')
@@ -623,6 +825,7 @@ export default function AdminApp() {
       setMarketImageFile(null)
       await refreshMarketUpdates()
       await refreshMedia()
+      publishPublicUpdate('market')
       setFlash('تم إنشاء تحديث السوق')
     } catch (error) {
       handleError(error, 'تعذر إنشاء تحديث السوق')
@@ -636,6 +839,7 @@ export default function AdminApp() {
     try {
       await adminAPI.updateMarketUpdate({ ...update, published_at: fromDateTimeLocal(update.published_at) })
       await refreshMarketUpdates()
+      publishPublicUpdate('market')
       setFlash('تم حفظ تحديث السوق')
     } catch (error) {
       handleError(error, 'تعذر حفظ تحديث السوق')
@@ -645,7 +849,7 @@ export default function AdminApp() {
   }
 
   const deleteMarketUpdate = async (id) => {
-    if (!window.confirm('هل تريد حذف تحديث السوق؟')) {
+    if (!(await confirmDelete('هل تريد حذف تحديث السوق؟'))) {
       return
     }
 
@@ -653,6 +857,7 @@ export default function AdminApp() {
     try {
       await adminAPI.deleteMarketUpdate(id)
       setMarketUpdates((current) => current.filter((item) => item.id !== id))
+      publishPublicUpdate('market')
       setFlash('تم حذف تحديث السوق')
     } catch (error) {
       handleError(error, 'تعذر حذف تحديث السوق')
@@ -687,6 +892,7 @@ export default function AdminApp() {
         setCoachImageFile(null)
       }
       await adminAPI.updateCoach(nextCoach)
+      publishPublicUpdate('coach')
       setFlash('تم حفظ بيانات المدرب')
     } catch (error) {
       handleError(error, 'تعذر حفظ بيانات المدرب')
@@ -710,8 +916,24 @@ export default function AdminApp() {
     }
   }
 
+  const uploadMediaFromField = async (file) => {
+    if (!file) return null
+    setSaving('media-inline-upload')
+    try {
+      const upload = await adminAPI.uploadMedia(file)
+      await refreshMedia()
+      setFlash('تم رفع الملف وربطه بالحقل. اضغط حفظ لتثبيت التغيير.')
+      return upload.data ?? null
+    } catch (error) {
+      handleError(error, 'تعذر رفع الملف')
+      return null
+    } finally {
+      setSaving('')
+    }
+  }
+
   const deleteMedia = async (id) => {
-    if (!window.confirm('هل تريد حذف هذا الملف؟')) {
+    if (!(await confirmDelete('هل تريد حذف هذا الملف؟'))) {
       return
     }
 
@@ -739,23 +961,28 @@ export default function AdminApp() {
     return <div className="flex min-h-screen items-center justify-center bg-slate-950 text-white">جاري تحميل لوحة التحكم...</div>
   }
 
+  if (loadFailed) {
+    return <div className="flex min-h-screen items-center justify-center bg-slate-950 px-4 text-center text-white">تعذر تحميل بيانات لوحة التحكم من قاعدة البيانات.</div>
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-white" dir="rtl">
-      <div className="flex min-h-screen overflow-x-clip">
+    <div className="h-screen overflow-hidden bg-slate-950 text-white" dir="rtl">
+      <DeleteConfirmDialog />
+      <div className="flex h-screen overflow-hidden">
         <div
           className={`fixed inset-0 z-40 bg-black/50 transition-opacity xl:hidden ${sidebarOpen ? 'opacity-100' : 'pointer-events-none opacity-0'}`}
           onClick={() => setSidebarOpen(false)}
         />
 
         <aside
-          className={`fixed right-0 top-0 z-50 h-full w-80 max-w-[88vw] overflow-y-auto border-l border-white/10 bg-slate-900/95 p-4 backdrop-blur transition-transform xl:sticky xl:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
+          className={`fixed right-0 top-0 z-50 h-screen w-80 max-w-[88vw] shrink-0 overflow-y-auto overscroll-contain border-l border-white/10 bg-slate-900/95 p-4 backdrop-blur transition-transform xl:sticky xl:top-0 xl:translate-x-0 ${sidebarOpen ? 'translate-x-0' : 'translate-x-full'}`}
         >
           <div className="flex items-center justify-between px-2 py-4">
             <div>
               <div className="font-bold text-white">لوحة التحكم</div>
-              <div className="text-xs text-slate-400">تحكم موحد في محتوى موقع Hunter Trading</div>
+              <div className="text-xs text-slate-400">تحكم موحد في محتوى الموقع</div>
             </div>
-            <button onClick={() => setSidebarOpen(false)} className="rounded-xl p-2 text-slate-300 hover:bg-white/5 xl:hidden">
+            <button type="button" onClick={() => setSidebarOpen(false)} className="rounded-xl p-2 text-slate-300 hover:bg-white/5 xl:hidden">
               <X className="h-5 w-5" />
             </button>
           </div>
@@ -775,11 +1002,9 @@ export default function AdminApp() {
                     const Icon = tab.icon
                     return (
                       <button
+                        type="button"
                         key={tab.id}
-                        onClick={() => {
-                          setActiveTab(tab.id)
-                          setSidebarOpen(false)
-                        }}
+                        onClick={() => selectAdminTab(tab.id)}
                         className={`flex w-full items-center gap-3 rounded-2xl px-4 py-3 text-right transition-all ${
                           activeTab === tab.id
                             ? 'border border-hunter-green/30 bg-hunter-green/15 text-hunter-green'
@@ -797,6 +1022,7 @@ export default function AdminApp() {
           </div>
 
           <button
+            type="button"
             onClick={logout}
             className="mt-8 flex w-full items-center justify-center gap-3 rounded-2xl border border-red-500/20 px-4 py-3 text-red-300 hover:bg-red-500/10"
           >
@@ -805,134 +1031,183 @@ export default function AdminApp() {
           </button>
         </aside>
 
-        <main className="min-w-0 flex-1 space-y-6 p-3 sm:p-4 md:p-6 lg:p-8">
-          <div className="sticky top-0 z-30 flex flex-col gap-4 rounded-3xl border border-white/10 bg-slate-900/80 px-4 py-4 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+        <main
+          ref={mainScrollRef}
+          onClickCapture={() => {
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(clampMainScroll)
+            })
+          }}
+          onChangeCapture={() => {
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(clampMainScroll)
+            })
+          }}
+          onInputCapture={() => {
+            window.requestAnimationFrame(() => {
+              window.requestAnimationFrame(clampMainScroll)
+            })
+          }}
+          className="h-screen min-w-0 flex-1 space-y-6 overflow-y-auto overscroll-contain p-3 sm:p-4 md:p-6 lg:p-8"
+          style={{ overflowAnchor: 'none' }}
+        >
+          <div className="sticky top-0 z-30 min-h-[6.25rem] rounded-3xl border border-white/10 bg-slate-900 px-4 py-4 pr-20 shadow-2xl shadow-slate-950/55 sm:flex sm:min-h-0 sm:items-center sm:justify-between sm:gap-4 xl:pr-4">
             <div className="min-w-0">
               <div className="text-lg font-bold text-white">{activeTabMeta.label}</div>
               <div className="text-sm text-slate-400">{activeTabMeta.description}</div>
             </div>
-            <button onClick={() => setSidebarOpen(true)} className="self-start rounded-2xl border border-white/10 p-3 text-slate-200 xl:hidden">
+            <button type="button" onClick={() => setSidebarOpen(true)} className="absolute right-4 top-4 rounded-2xl border border-white/10 bg-slate-950/70 p-3 text-slate-200 shadow-lg shadow-black/25 transition hover:border-hunter-green/40 hover:bg-slate-900 xl:hidden">
               <Menu className="h-5 w-5" />
             </button>
           </div>
 
           {message ? <div className="rounded-2xl border border-hunter-green/20 bg-hunter-green/15 px-4 py-3 text-hunter-green">{message}</div> : null}
 
-          {activeTab === 'overview' ? <DashboardOverviewModule dashboard={dashboard} servicesCount={services.length} pendingOrders={pendingOrders} /> : null}
-          {activeTab === 'section-order' ? (
-            <SectionOrderModule
-              sections={sections}
-              setSections={setSections}
-              onSave={saveSections}
-              onAutoSave={(nextSections) => saveSections(nextSections, 'تم حفظ ترتيب وظهور السكشنات')}
-              saving={saving === 'sections-save'}
-            />
-          ) : null}
-          {activeTab === 'home' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} media={media} contentSectionKeys={[]} /> : null}
-          {activeServiceTab ? (
-            <>
-              <ServiceSectionModule
-                sectionKey={activeServiceTab.type}
-                title={activeServiceTab.label}
+          <div ref={mainContentRef} className="space-y-6">
+            <AdminFieldLanguageProvider mode={activeTab === 'translations' ? 'all' : 'arabic'}>
+            {activeTab === 'overview' ? <DashboardOverviewModule dashboard={dashboard} servicesCount={services.length} pendingOrders={pendingOrders} /> : null}
+            {activeTab === 'section-order' ? (
+              <SectionOrderModule
                 sections={sections}
                 setSections={setSections}
                 onSave={saveSections}
+                onAutoSave={(nextSections) => saveSections(nextSections, 'تم حفظ ترتيب وظهور السكشنات')}
                 saving={saving === 'sections-save'}
               />
-              <ServicesModule
+            ) : null}
+            {activeTab === 'home' ? <WebsiteContentModule sections={sections} setSections={setSections} onSave={saveSections} saving={saving === 'sections-save'} media={media} contentSectionKeys={[]} onUploadMedia={uploadMediaFromField} /> : null}
+            {activeServiceTab ? (
+              <>
+                <ServiceSectionModule
+                  sectionKey={activeServiceTab.type}
+                  title={activeServiceTab.label}
+                  sections={sections}
+                  setSections={setSections}
+                  onSave={saveSections}
+                  saving={saving === 'sections-save'}
+                />
+                <ServicesModule
+                  services={services}
+                  setServices={setServices}
+                  serviceDraft={serviceDraft}
+                  setServiceDraft={setServiceDraft}
+                  serviceImageFile={serviceImageFile}
+                  setServiceImageFile={setServiceImageFile}
+                  filterType={serviceTypeFilter}
+                  setFilterType={setServiceTypeFilter}
+                  onCreate={createService}
+                  onUpdate={updateService}
+                  onDelete={deleteService}
+                  onUploadImage={uploadServiceImage}
+                  onUploadDraftMedia={uploadServiceDraftMedia}
+                  onUploadDraftGalleryMedia={uploadServiceDraftGalleryMedia}
+                  onUploadGalleryMedia={uploadServiceGalleryMedia}
+                  saving={saving}
+                  media={media}
+                  lockedType={activeServiceTab.type}
+                  moduleTitle={activeServiceTab.label}
+                  moduleDescription={activeServiceTab.description}
+                />
+              </>
+            ) : null}
+            {activeTab === 'payment-settings' ? (
+              <PaymentSettingsModule
+                settings={siteSettings}
+                setSettings={setSiteSettings}
+                onSave={saveSettings}
+                saving={saving === 'settings-save'}
+              />
+            ) : null}
+            {activeTab === 'orders' ? <PaymentOrdersModule orders={orders} setOrders={setOrders} onSaveOrder={updateOrder} saving={saving} /> : null}
+            {activeTab === 'testimonials' ? (
+              <TestimonialsModule
+                testimonials={testimonials}
+                setTestimonials={setTestimonials}
+                draft={testimonialDraft}
+                setDraft={setTestimonialDraft}
+                draftImageFile={testimonialImageFile}
+                setDraftImageFile={setTestimonialImageFile}
+                onCreate={createTestimonial}
+                onUpdate={updateTestimonial}
+                onDelete={deleteTestimonial}
+                onUploadImage={uploadTestimonialImage}
+                saving={saving}
                 services={services}
-                setServices={setServices}
-                serviceDraft={serviceDraft}
-                setServiceDraft={setServiceDraft}
-                serviceImageFile={serviceImageFile}
-                setServiceImageFile={setServiceImageFile}
-                filterType={serviceTypeFilter}
-                setFilterType={setServiceTypeFilter}
-                onCreate={createService}
-                onUpdate={updateService}
-                onDelete={deleteService}
-                onUploadImage={uploadServiceImage}
+                media={media}
+              />
+            ) : null}
+            {activeTab === 'market' ? (
+              <MarketModule
+                updates={marketUpdates}
+                setUpdates={setMarketUpdates}
+                draft={marketDraft}
+                setDraft={setMarketDraft}
+                draftImageFile={marketImageFile}
+                setDraftImageFile={setMarketImageFile}
+                onCreate={createMarketUpdate}
+                onUpdate={updateMarketUpdate}
+                onDelete={deleteMarketUpdate}
+                onUploadImage={uploadMarketImage}
                 saving={saving}
                 media={media}
-                lockedType={activeServiceTab.type}
-                moduleTitle={activeServiceTab.label}
-                moduleDescription={activeServiceTab.description}
               />
-            </>
-          ) : null}
-          {activeTab === 'payment-settings' ? (
-            <PaymentSettingsModule
-              settings={siteSettings}
-              setSettings={setSiteSettings}
-              onSave={saveSettings}
-              saving={saving === 'settings-save'}
-            />
-          ) : null}
-          {activeTab === 'orders' ? <PaymentOrdersModule orders={orders} setOrders={setOrders} onSaveOrder={updateOrder} saving={saving} /> : null}
-          {activeTab === 'testimonials' ? (
-            <TestimonialsModule
-              testimonials={testimonials}
-              setTestimonials={setTestimonials}
-              draft={testimonialDraft}
-              setDraft={setTestimonialDraft}
-              draftImageFile={testimonialImageFile}
-              setDraftImageFile={setTestimonialImageFile}
-              onCreate={createTestimonial}
-              onUpdate={updateTestimonial}
-              onDelete={deleteTestimonial}
-              onUploadImage={uploadTestimonialImage}
-              saving={saving}
-              services={services}
-              media={media}
-            />
-          ) : null}
-          {activeTab === 'market' ? (
-            <MarketModule
-              updates={marketUpdates}
-              setUpdates={setMarketUpdates}
-              draft={marketDraft}
-              setDraft={setMarketDraft}
-              draftImageFile={marketImageFile}
-              setDraftImageFile={setMarketImageFile}
-              onCreate={createMarketUpdate}
-              onUpdate={updateMarketUpdate}
-              onDelete={deleteMarketUpdate}
-              onUploadImage={uploadMarketImage}
-              saving={saving}
-              media={media}
-            />
-          ) : null}
-          {activeTab === 'media' ? (
-            <MediaLibraryModule
-              media={media}
-              uploadFile={mediaUploadFile}
-              setUploadFile={setMediaUploadFile}
-              onUpload={uploadMedia}
-              onDelete={deleteMedia}
-              saving={saving}
-            />
-          ) : null}
-          {activeTab === 'coach' ? (
-            <CoachSocialModule
-              coach={coach}
-              setCoach={setCoach}
-              coachImageFile={coachImageFile}
-              setCoachImageFile={setCoachImageFile}
-              onSaveCoach={saveCoach}
-              saving={saving}
-            />
-          ) : null}
-          {activeTab === 'settings' ? (
-            <SettingsModule
-              settings={siteSettings}
-              setSettings={setSiteSettings}
-              siteLogoFile={siteLogoFile}
-              setSiteLogoFile={setSiteLogoFile}
-              onSave={saveSettings}
-              saving={saving === 'settings-save'}
-            />
-          ) : null}
-          {activeTab === 'leads' ? <LeadsModule leads={leads} /> : null}
+            ) : null}
+            {activeTab === 'media' ? (
+              <MediaLibraryModule
+                media={media}
+                uploadFile={mediaUploadFile}
+                setUploadFile={setMediaUploadFile}
+                onUpload={uploadMedia}
+                onDelete={deleteMedia}
+                saving={saving}
+              />
+            ) : null}
+            {activeTab === 'coach' ? (
+              <CoachSocialModule
+                coach={coach}
+                setCoach={setCoach}
+                coachImageFile={coachImageFile}
+                setCoachImageFile={setCoachImageFile}
+                onSaveCoach={saveCoach}
+                saving={saving}
+              />
+            ) : null}
+            {activeTab === 'settings' ? (
+              <SettingsModule
+                settings={siteSettings}
+                setSettings={setSiteSettings}
+                siteLogoFile={siteLogoFile}
+                setSiteLogoFile={setSiteLogoFile}
+                onSave={saveSettings}
+                saving={saving === 'settings-save'}
+              />
+            ) : null}
+            {activeTab === 'translations' ? (
+              <TranslationsModule
+                sections={sections}
+                setSections={setSections}
+                onSaveSections={saveSections}
+                services={services}
+                setServices={setServices}
+                onSaveService={updateService}
+                coach={coach}
+                setCoach={setCoach}
+                onSaveCoach={saveCoach}
+                testimonials={testimonials}
+                setTestimonials={setTestimonials}
+                onSaveTestimonial={updateTestimonial}
+                marketUpdates={marketUpdates}
+                setMarketUpdates={setMarketUpdates}
+                onSaveMarketUpdate={updateMarketUpdate}
+                settings={siteSettings}
+                setSettings={setSiteSettings}
+                onSaveSettings={saveSettings}
+                saving={saving}
+              />
+            ) : null}
+            {activeTab === 'leads' ? <LeadsModule leads={leads} /> : null}
+            </AdminFieldLanguageProvider>
+          </div>
         </main>
       </div>
     </div>

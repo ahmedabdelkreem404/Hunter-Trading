@@ -3,6 +3,8 @@ import { useTranslation } from 'react-i18next'
 import { ArrowLeft, Package2 } from 'lucide-react'
 import { servicesAPI, settingsAPI } from '../api'
 import useApiData from '../hooks/useApiData'
+import SmartMedia from '../components/ui/SmartMedia'
+import { resolveMediaType } from '../utils/media'
 
 export default function OfferDetailsPage() {
   const { slug } = useParams()
@@ -10,7 +12,7 @@ export default function OfferDetailsPage() {
   const isArabic = i18n.language === 'ar'
   const { data: offer } = useApiData(() => servicesAPI.getBySlug(slug), null, (response) => response.data ?? null)
   const { data: settings } = useApiData(settingsAPI.getPublic, {}, (response) => response.data ?? {})
-  const websiteName = settings.general?.website_name?.value || 'Hunter Trading'
+  const websiteName = settings.general?.website_name?.value || ''
 
   if (!offer) {
     return (
@@ -19,7 +21,6 @@ export default function OfferDetailsPage() {
           <Link to="/offers" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-hunter-text-muted hover:text-hunter-green">
             {isArabic ? 'العودة إلى العروض' : 'Back to offers'}
           </Link>
-          <div className="card mt-8 text-center">{isArabic ? 'العرض غير موجود.' : 'This offer does not exist.'}</div>
         </div>
       </div>
     )
@@ -40,12 +41,22 @@ export default function OfferDetailsPage() {
 
         <article className="mt-8 rounded-3xl border border-white/10 bg-hunter-card p-6 shadow-2xl shadow-black/20 sm:p-8">
           <div className="mb-6">
-            <div className="text-sm text-hunter-green">{websiteName}</div>
+            {websiteName ? <div className="text-sm text-hunter-green">{websiteName}</div> : null}
             <h1 className="mt-2 font-heading text-3xl font-bold text-hunter-text">{title}</h1>
           </div>
 
           {(offer.cover_url || offer.thumbnail_url) ? (
-            <img src={offer.cover_url || offer.thumbnail_url} alt={title} className="mb-8 h-72 w-full rounded-2xl object-cover" />
+            <SmartMedia
+              src={offer.cover_url || offer.thumbnail_url}
+              type={resolveMediaType(offer.cover_url || offer.thumbnail_url, offer.cover_media_type || offer.card_media_type || 'image')}
+              alt={title}
+              className="mb-8 h-72 w-full rounded-2xl object-cover"
+              iframeClassName="mb-8 h-72 w-full rounded-2xl"
+              autoPlay
+              muted
+              loop
+              controls={false}
+            />
           ) : (
             <div className="mb-8 flex h-72 items-center justify-center rounded-2xl bg-white/5">
               <Package2 className="h-14 w-14 text-hunter-green/60" />

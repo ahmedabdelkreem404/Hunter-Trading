@@ -113,7 +113,7 @@ class PaymentOrderController {
 
             $fallbackRedirect = $this->getSettingValue(
                 'purchase_redirect_url',
-                $this->getSettingValue('telegram_url', $this->getSettingValue('free_telegram_url', 'https://t.me/hunter_tradeing'))
+                $this->getSettingValue('telegram_url', $this->getSettingValue('free_telegram_url', ''))
             );
             $redirectUrl = ($service['cta_url'] ?? null) ?: $fallbackRedirect;
 

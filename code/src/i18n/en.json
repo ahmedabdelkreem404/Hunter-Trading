@@ -1,131 +1,131 @@
 {
   "nav": {
-    "home": "Home",
-    "funded": "Funded Accounts",
-    "vip": "VIP",
-    "courses": "Courses",
-    "signals": "Market Watch",
-    "affiliate": "Scalp",
-    "blog": "Offers",
+    "home": "",
+    "funded": "",
+    "vip": "",
+    "courses": "",
+    "signals": "",
+    "affiliate": "",
+    "blog": "",
     "admin": "Admin"
   },
   "hero": {
-    "title": "Master the Art of Trading",
-    "subtitle": "Join thousands of successful traders who transformed their financial future with proven strategies and expert mentorship.",
-    "cta_telegram": "Join Telegram",
-    "cta_courses": "Start Learning",
-    "stats_students": "10,000+ Students",
-    "stats_years": "8+ Years Experience",
-    "stats_winrate": "87% Win Rate"
+    "title": "",
+    "subtitle": "",
+    "cta_telegram": "",
+    "cta_courses": "",
+    "stats_students": "",
+    "stats_years": "",
+    "stats_winrate": ""
   },
   "coach": {
-    "title": "Meet Your Trading Coach",
-    "name": "Ahmed Hunter",
-    "bio_intro": "After losing $50,000 in my first year of trading, I decided to dedicate my life to mastering the markets.",
-    "bio_struggle": "The journey wasn't easy. I studied hundreds of strategies, attended seminars, and learned from the biggest names in trading. But nothing worked until I developed my own systematic approach.",
-    "bio_success": "Today, I've helped over 10,000 students worldwide achieve consistent profits. My methods are based on real market experience, not theory.",
-    "experience": "Years of Experience",
-    "students": "Students Trained",
-    "profit_shared": "Profits Generated"
+    "title": "",
+    "name": "",
+    "bio_intro": "",
+    "bio_struggle": "",
+    "bio_success": "",
+    "experience": "",
+    "students": "",
+    "profit_shared": ""
   },
   "results": {
-    "title": "Real Trading Results",
-    "subtitle": "These aren't hypothetical numbers. Every trade, every profit shown here is real and verifiable.",
-    "total_profit": "Total Profit",
-    "win_rate": "Win Rate",
-    "total_trades": "Total Trades",
-    "avg_monthly": "Avg Monthly"
+    "title": "",
+    "subtitle": "",
+    "total_profit": "",
+    "win_rate": "",
+    "total_trades": "",
+    "avg_monthly": ""
   },
   "testimonials": {
-    "title": "What Our Students Say",
-    "subtitle": "Don't just take our word for it. Here's what real traders have to say about their journey with Hunter Trading."
+    "title": "",
+    "subtitle": ""
   },
   "courses": {
-    "title": "Trading Courses",
-    "subtitle": "From beginner to advanced, our structured courses take you through every aspect of profitable trading.",
+    "title": "",
+    "subtitle": "",
     "beginner": {
-      "title": "Beginner Course",
-      "description": "Learn the fundamentals of trading, market analysis, and risk management."
+      "title": "",
+      "description": ""
     },
     "intermediate": {
-      "title": "Intermediate Course",
-      "description": "Master technical analysis, chart patterns, and trading strategies."
+      "title": "",
+      "description": ""
     },
     "advanced": {
-      "title": "Advanced Course",
-      "description": "Develop professional trading systems and psychological mastery."
+      "title": "",
+      "description": ""
     },
-    "enroll": "Enroll Now",
-    "lessons": "Lessons",
-    "students": "Students"
+    "enroll": "",
+    "lessons": "",
+    "students": ""
   },
   "signals": {
-    "title": "Market Watch",
-    "subtitle": "Get real-time trading signals delivered directly to your device. High accuracy, transparent results.",
-    "type": "Type",
-    "pair": "Pair",
-    "entry": "Entry",
-    "tp": "Take Profit",
-    "sl": "Stop Loss",
-    "status": "Status",
-    "pips": "Pips",
-    "buy": "BUY",
-    "sell": "SELL",
-    "active": "Active",
-    "closed": "Closed",
-    "profitable": "Profitable",
-    "loss": "Loss",
-    "disclaimer": "Signals use a short-term momentum strategy with EMA trend and candle volatility. They are educational and not financial advice."
+    "title": "",
+    "subtitle": "",
+    "type": "",
+    "pair": "",
+    "entry": "",
+    "tp": "",
+    "sl": "",
+    "status": "",
+    "pips": "",
+    "buy": "",
+    "sell": "",
+    "active": "",
+    "closed": "",
+    "profitable": "",
+    "loss": "",
+    "disclaimer": ""
   },
   "affiliate": {
-    "title": "Scalp",
-    "subtitle": "Master the market with professional scalping strategies and quick profits.",
-    "benefits_title": "Why Trade With Us",
-    "benefit_1": "Low spreads from 0.0 pips",
-    "benefit_2": "Fast execution under 50ms",
-    "benefit_3": "Secure regulated broker",
-    "benefit_4": "24/7 customer support",
-    "cta": "Open Account",
-    "cta_valtex": "Open VALTEX Account",
-    "cta_gtc": "Open GTC Account",
-    "steps_title": "How to Start",
-    "step_1": "Click the button above",
-    "step_2": "Register with your details",
-    "step_3": "Fund your account",
-    "step_4": "Start trading"
+    "title": "",
+    "subtitle": "",
+    "benefits_title": "",
+    "benefit_1": "",
+    "benefit_2": "",
+    "benefit_3": "",
+    "benefit_4": "",
+    "cta": "",
+    "cta_valtex": "",
+    "cta_gtc": "",
+    "steps_title": "",
+    "step_1": "",
+    "step_2": "",
+    "step_3": "",
+    "step_4": ""
   },
   "blog": {
-    "title": "Latest Offers",
-    "subtitle": "Discover our latest exclusive offers and discounts on our services.",
-    "read_more": "Read More",
-    "min_read": "min read"
+    "title": "",
+    "subtitle": "",
+    "read_more": "",
+    "min_read": ""
   },
   "footer": {
-    "description": "Hunter Trading - Your path to financial freedom through expert trading education and proven strategies.",
-    "quick_links": "Quick Links",
-    "legal": "Legal",
-    "privacy": "Privacy Policy",
-    "terms": "Terms of Service",
-    "disclaimer": "Risk Disclaimer",
-    "copyright": "All rights reserved."
+    "description": "",
+    "quick_links": "",
+    "legal": "",
+    "privacy": "",
+    "terms": "",
+    "disclaimer": "",
+    "copyright": ""
   },
   "lead_magnet": {
-    "title": "Get Your Free Trading Guide",
-    "subtitle": "Enter your email and get our comprehensive 'Forex Trading for Beginners' guide absolutely free.",
-    "name_placeholder": "Your Name",
-    "email_placeholder": "Your Email",
-    "submit": "Get Free Guide",
-    "success": "Check your email for the free guide!",
-    "error": "Something went wrong. Please try again."
+    "title": "",
+    "subtitle": "",
+    "name_placeholder": "",
+    "email_placeholder": "",
+    "submit": "",
+    "success": "",
+    "error": ""
   },
   "telegram": {
-    "cta": "Join Our Telegram Community",
-    "members": "members"
+    "cta": "",
+    "members": ""
   },
   "common": {
     "loading": "Loading...",
     "error": "Something went wrong",
-    "retry": "Try Again",
+    "retry": "Try again",
     "close": "Close",
     "save": "Save",
     "cancel": "Cancel",

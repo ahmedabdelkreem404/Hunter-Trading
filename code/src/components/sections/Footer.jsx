@@ -5,14 +5,6 @@ import useApiData from '../../hooks/useApiData'
 import SocialBrandIcon, { buildSocialLinksFromSettings, getSocialBrand, normalizeSocialUrl } from '../ui/SocialBrandIcon'
 
 const LIVE_REFRESH_INTERVAL = 0
-const ARABIC_MENU_LABELS = {
-  '#home': 'الرئيسية',
-  '#funded': 'الحسابات الممولة',
-  '#vip': 'VIP',
-  '#scalp': 'سكالب',
-  '#courses': 'الدورات',
-  '#offers': 'العروض',
-}
 
 function normalizeLinks(items = [], fallback = [], currentLanguage = 'en') {
   if (Array.isArray(items) && items.length > 0) {
@@ -21,18 +13,19 @@ function normalizeLinks(items = [], fallback = [], currentLanguage = 'en') {
       .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
       .map((item) => ({
         name: currentLanguage === 'ar'
-          ? ARABIC_MENU_LABELS[item.href] || item.label_ar || item.label_en
+          ? item.label_ar || item.label_en
           : item.label_en || item.label_ar,
         href: item.href || '#home',
         newTab: !!item.new_tab,
       }))
+      .filter((item) => item.name && item.href)
   }
 
-  return fallback
+  return fallback.filter((item) => item.name && item.href)
 }
 
 export default function Footer({ homeAnchor = 'home', quickSections = [], footerSettings = {} }) {
-  const { t, i18n } = useTranslation()
+  const { i18n } = useTranslation()
   const currentYear = new Date().getFullYear()
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
@@ -54,20 +47,25 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
     return general[`${key}_en`]?.value || fallback
   }
   const defaultQuickLinks = [
-    { name: currentLanguage === 'ar' ? 'الرئيسية' : 'Home', href: `#${homeAnchor}`, newTab: false },
     ...quickSections.filter((section) => section.id !== 'hero').map((section) => ({ name: getSectionLabel(section), href: `#${section.anchor}`, newTab: false })),
   ].slice(0, 4)
   const quickLinks = normalizeLinks(footerSettings.quick_links || [], defaultQuickLinks, currentLanguage)
   const legalFallback = [
-    { name: getLocalizedSetting('privacy_policy_title', t('footer.privacy')), href: '/privacy-policy', newTab: false },
-    { name: getLocalizedSetting('terms_title', t('footer.terms')), href: '/terms-and-conditions', newTab: false },
-    { name: getLocalizedSetting('risk_disclaimer_title', t('footer.disclaimer')), href: '/risk-disclaimer', newTab: false },
-  ]
+    { name: getLocalizedSetting('privacy_policy_title', ''), href: '/privacy-policy', newTab: false },
+    { name: getLocalizedSetting('terms_title', ''), href: '/terms-and-conditions', newTab: false },
+    { name: getLocalizedSetting('risk_disclaimer_title', ''), href: '/risk-disclaimer', newTab: false },
+  ].filter((item) => item.name)
   const legalItems = normalizeLinks(footerSettings.legal_links || [], legalFallback, currentLanguage)
   const siteLogo = general.site_logo?.value || ''
-  const footerDescription = getLocalizedSetting('footer_description', t('footer.description'))
-  const riskWarningTitle = getLocalizedSetting('risk_warning_title', t('footer.disclaimer'))
+  const websiteName = general.website_name?.value || ''
+  const footerDescription = getLocalizedSetting('footer_description', '')
+  const riskWarningTitle = getLocalizedSetting('risk_warning_title', '')
   const riskWarningContent = getLocalizedSetting('risk_warning_content', '')
+  const supportEmail = general.support_email?.value || general.contact_email?.value || ''
+  const location = general.location?.value || ''
+  const copyright = currentLanguage === 'ar'
+    ? general.footer_copyright_ar?.value || general.footer_copyright?.value || ''
+    : general.footer_copyright_en?.value || general.footer_copyright?.value || ''
 
   const socialLinks = buildSocialLinksFromSettings(general)
 
@@ -77,7 +75,7 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
       href={link.href}
       target={link.newTab ? '_blank' : undefined}
       rel={link.newTab ? 'noreferrer' : undefined}
-      className="inline-flex py-1 text-sm leading-6 text-hunter-text-muted transition-colors hover:text-hunter-green"
+      className="inline-flex py-1 text-xs leading-5 text-hunter-text-muted transition-colors hover:text-hunter-green sm:text-sm sm:leading-6"
     >
       {link.name}
     </a>
@@ -85,22 +83,24 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
 
   return (
     <footer className="border-t border-white/10 bg-hunter-bg">
-      <div className="mx-auto max-w-7xl px-4 py-10 sm:px-6 md:py-16 lg:px-8">
-        <div className="grid grid-cols-2 gap-6 lg:grid-cols-4 lg:gap-12">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 sm:py-10 md:py-14 lg:px-8">
+        <div className="grid grid-cols-2 gap-5 lg:grid-cols-4 lg:gap-12">
           <div className="col-span-2 text-center lg:col-span-1 lg:text-start">
             <div className="mb-3 flex items-center justify-center gap-2 lg:justify-start">
               {siteLogo ? (
                 <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-xl bg-white/70 ring-1 ring-black/5 dark:bg-white/10 dark:ring-white/10">
-                  <img src={siteLogo} alt={general.website_name?.value || 'Hunter Trading'} className="h-full w-full object-contain p-1.5" />
+                  <img src={siteLogo} alt={websiteName} className="h-full w-full object-contain p-1.5" />
                 </div>
-              ) : (
+              ) : websiteName ? (
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-hunter-gradient">
-                  <span className="font-heading text-xl font-bold text-hunter-bg">H</span>
+                  <span className="font-heading text-xl font-bold text-hunter-bg">{websiteName.charAt(0)}</span>
                 </div>
-              )}
-              <span className="font-heading text-xl font-bold text-hunter-text">{general.website_name?.value || 'Hunter Trading'}</span>
+              ) : null}
+              {websiteName ? <span className="font-heading text-xl font-bold text-hunter-text">{websiteName}</span> : null}
             </div>
-            <p className="mx-auto mb-5 max-w-sm text-sm leading-7 text-hunter-text-muted lg:mx-0">{footerDescription}</p>
+            {footerDescription ? (
+              <p className="mx-auto mb-5 line-clamp-2 max-w-sm text-xs leading-6 text-hunter-text-muted sm:text-sm sm:leading-7 lg:mx-0 lg:line-clamp-none">{footerDescription}</p>
+            ) : null}
 
             <div className="flex flex-wrap justify-center gap-2.5 lg:justify-start lg:gap-3">
               {socialLinks.map((social) => {
@@ -129,44 +129,55 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
             </div>
           </div>
 
-          <div className="border-t border-white/10 pt-5 lg:border-t-0 lg:pt-0">
-            <h4 className="mb-3 font-heading text-base font-semibold text-hunter-text">{t('footer.quick_links')}</h4>
+          {quickLinks.length > 0 ? (
+          <div className="border-t border-white/10 pt-4 lg:border-t-0 lg:pt-0">
+            <h4 className="mb-2 font-heading text-sm font-semibold text-hunter-text sm:mb-3 sm:text-base">{footerSettings.quick_links_title || ''}</h4>
             <ul className="space-y-1.5 md:space-y-2">
               {quickLinks.map((link) => <li key={`${link.name}-${link.href}`}>{renderLink(link)}</li>)}
             </ul>
           </div>
+          ) : null}
 
-          <div className="border-t border-white/10 pt-5 lg:border-t-0 lg:pt-0">
-            <h4 className="mb-3 font-heading text-base font-semibold text-hunter-text">{t('footer.legal')}</h4>
+          {legalItems.length > 0 ? (
+          <div className="border-t border-white/10 pt-4 lg:border-t-0 lg:pt-0">
+            <h4 className="mb-2 font-heading text-sm font-semibold text-hunter-text sm:mb-3 sm:text-base">{footerSettings.legal_links_title || ''}</h4>
             <ul className="space-y-1.5 md:space-y-2">
               {legalItems.map((link) => <li key={`${link.name}-${link.href}`}>{renderLink(link)}</li>)}
             </ul>
           </div>
+          ) : null}
 
-          <div className="col-span-2 border-t border-white/10 pt-5 lg:col-span-1 lg:border-t-0 lg:pt-0">
-            <h4 className="mb-3 font-heading text-base font-semibold text-hunter-text">{currentLanguage === 'ar' ? 'التواصل' : 'Contact'}</h4>
-            <ul className="grid gap-3 sm:grid-cols-2 lg:block lg:space-y-3">
+          {(supportEmail || location) ? (
+          <div className="col-span-2 border-t border-white/10 pt-4 lg:col-span-1 lg:border-t-0 lg:pt-0">
+            <h4 className="mb-2 font-heading text-sm font-semibold text-hunter-text sm:mb-3 sm:text-base">{footerSettings.contact_title || ''}</h4>
+            <ul className="grid gap-2.5 sm:grid-cols-2 lg:block lg:space-y-3">
+              {supportEmail ? (
               <li className="flex items-start gap-2.5 text-sm text-hunter-text-muted">
                 <Mail className="mt-1 h-4 w-4 shrink-0 text-hunter-green" />
-                <span className="break-all leading-6">{general.support_email?.value || 'support@huntertrading.com'}</span>
+                <span className="break-all leading-6">{supportEmail}</span>
               </li>
+              ) : null}
+              {location ? (
               <li className="flex items-start gap-2.5 text-sm text-hunter-text-muted">
                 <MapPin className="mt-1 h-4 w-4 shrink-0 text-hunter-green" />
-                <span className="leading-6">{general.location?.value || 'Dubai, UAE'}</span>
+                <span className="leading-6">{location}</span>
               </li>
+              ) : null}
             </ul>
           </div>
+          ) : null}
         </div>
       </div>
 
+      {riskWarningTitle || riskWarningContent ? (
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 sm:py-6 lg:px-8">
-          <details className="rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-4 sm:hidden">
+        <div className="mx-auto max-w-7xl px-4 py-3 sm:px-6 sm:py-6 lg:px-8">
+          <details className="rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-3.5 sm:hidden">
             <summary className="flex cursor-pointer list-none items-center gap-2 text-sm font-bold text-hunter-orange">
-              <AlertTriangle className="h-5 w-5 shrink-0" />
+              <AlertTriangle className="h-4 w-4 shrink-0" />
               {riskWarningTitle}
             </summary>
-            <div className="mt-3 text-sm leading-7 text-hunter-text-muted">{riskWarningContent}</div>
+            <div className="mt-3 text-xs leading-6 text-hunter-text-muted">{riskWarningContent}</div>
           </details>
           <div className="hidden items-start gap-3 rounded-2xl border border-hunter-orange/20 bg-hunter-orange/10 p-4 sm:flex sm:p-5">
             <AlertTriangle className="mt-0.5 h-6 w-6 flex-shrink-0 text-hunter-orange" />
@@ -176,14 +187,17 @@ export default function Footer({ homeAnchor = 'home', quickSections = [], footer
           </div>
         </div>
       </div>
+      ) : null}
 
+      {copyright || websiteName ? (
       <div className="border-t border-white/10">
-        <div className="mx-auto max-w-7xl px-4 py-5 text-center sm:px-6 lg:px-8">
-          <p className="text-sm text-hunter-text-muted">
-            © {currentYear} {general.website_name?.value || 'Hunter Trading'}. {t('footer.copyright')}
+        <div className="mx-auto max-w-7xl px-4 py-4 text-center sm:px-6 sm:py-5 lg:px-8">
+          <p className="text-xs text-hunter-text-muted sm:text-sm">
+            {copyright || `© ${currentYear} ${websiteName}`}
           </p>
         </div>
       </div>
+      ) : null}
     </footer>
   )
 }

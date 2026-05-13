@@ -139,8 +139,8 @@ export const SOCIAL_PLATFORMS = [
   { platform: 'whatsapp', name: 'WhatsApp', name_ar: 'واتساب', urlKey: 'whatsapp_url', enabledKey: 'whatsapp_enabled', order: 2 },
   { platform: 'instagram', name: 'Instagram', name_ar: 'إنستجرام', urlKey: 'instagram_url', enabledKey: 'instagram_enabled', order: 3 },
   { platform: 'youtube', name: 'YouTube', name_ar: 'يوتيوب', urlKey: 'youtube_url', enabledKey: 'youtube_enabled', order: 4 },
-  { platform: 'tiktok', name: 'TikTok', name_ar: 'تيك توك', urlKey: 'tiktok_url', enabledKey: 'tiktok_enabled', order: 5 },
-  { platform: 'facebook', name: 'Facebook', name_ar: 'فيسبوك', urlKey: 'facebook_url', enabledKey: 'facebook_enabled', order: 6 },
+  { platform: 'facebook', name: 'Facebook', name_ar: 'فيسبوك', urlKey: 'facebook_url', enabledKey: 'facebook_enabled', order: 5 },
+  { platform: 'tiktok', name: 'TikTok', name_ar: 'تيك توك', urlKey: 'tiktok_url', enabledKey: 'tiktok_enabled', order: 6 },
   { platform: 'x', name: 'X', name_ar: 'X', urlKey: 'twitter_url', enabledKey: 'twitter_enabled', order: 7 },
   { platform: 'linkedin', name: 'LinkedIn', name_ar: 'لينكدإن', urlKey: 'linkedin_url', enabledKey: 'linkedin_enabled', order: 8 },
 ]
@@ -179,6 +179,12 @@ export function buildSocialLinksFromSettings(settings = {}) {
 
 export function getSocialBrand(platform = '') {
   const key = String(platform).trim().toLowerCase()
+  const explicitKey = key.split(/\s+/)[0]
+  const normalizedExplicitKey = explicitKey === 'twitter' ? 'x' : explicitKey
+  if (brands[normalizedExplicitKey]) {
+    return brands[normalizedExplicitKey]
+  }
+
   const inferredKey =
     brands[key] ? key :
     key.includes('telegram') || key.includes('t.me/') ? 'telegram' :

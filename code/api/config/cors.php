@@ -1,7 +1,7 @@
 <?php
 /**
  * CORS Configuration
- * Hunter Trading API
+ * Public API
  */
 
 require_once __DIR__ . '/env.php';

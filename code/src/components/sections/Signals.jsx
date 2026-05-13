@@ -5,37 +5,44 @@ import { marketAPI, sectionSettingsAPI, settingsAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
 
 const selectUpdates = (response) => response.data ?? []
-const MARKET_REFRESH_INTERVAL = 30000
 
 export default function MarketSection() {
-  const { i18n, t } = useTranslation()
+  const { i18n } = useTranslation()
   const isArabic = i18n.language === 'ar'
   const { data: updates } = useApiData(
     marketAPI.getPublic,
     [],
     selectUpdates,
     [],
-    { refreshInterval: MARKET_REFRESH_INTERVAL }
+    { refreshInterval: 0 }
   )
   const { data: sections } = useApiData(
     sectionSettingsAPI.getPublic,
     [],
     (response) => response.data ?? [],
     [],
-    { refreshInterval: MARKET_REFRESH_INTERVAL }
+    { refreshInterval: 0 }
   )
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
     {},
     (response) => response.data ?? {},
     [],
-    { refreshInterval: MARKET_REFRESH_INTERVAL }
+    { refreshInterval: 0 }
   )
   const section = sections.find((item) => item.section_key === 'market') ?? {}
   const telegramLink =
     settings.general?.telegram_url?.value ||
     settings.general?.free_telegram_url?.value ||
-    'https://t.me/hunter_tradeing'
+    ''
+  const sectionTitle = (isArabic ? section.title_ar : section.title_en) || ''
+  const sectionSubtitle = (isArabic ? section.subtitle_ar : section.subtitle_en) || ''
+  const ctaLabel = (isArabic ? section.cta_label_ar : section.cta_label_en) || ''
+  const ctaUrl = section.cta_url || telegramLink
+
+  if (updates.length === 0) {
+    return null
+  }
 
   return (
     <section id="market" className="relative bg-hunter-card py-20 md:py-32">
@@ -47,16 +54,11 @@ export default function MarketSection() {
           transition={{ duration: 0.6 }}
           className="mb-12 text-center"
         >
-          <h2 className="section-title">
-            {(isArabic ? section.title_ar : section.title_en) || t('signals.title')}
-          </h2>
-          <p className="section-subtitle">
-            {(isArabic ? section.subtitle_ar : section.subtitle_en) || 'تابع أحدث تحليلات السوق والتحديثات من مصدر واحد.'}
-          </p>
+          {sectionTitle ? <h2 className="section-title">{sectionTitle}</h2> : null}
+          {sectionSubtitle ? <p className="section-subtitle">{sectionSubtitle}</p> : null}
         </motion.div>
 
-        {updates.length > 0 ? (
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
             {updates.map((update, index) => {
               const title = isArabic ? update.title_ar || update.title_en : update.title_en || update.title_ar
               const summary = isArabic ? update.summary_ar || update.summary_en : update.summary_en || update.summary_ar
@@ -116,18 +118,15 @@ export default function MarketSection() {
                 </motion.article>
               )
             })}
-          </div>
-        ) : (
-          <div className="rounded-[2rem] border border-dashed border-white/10 bg-hunter-bg p-10 text-center text-hunter-text-muted">
-            لا توجد تحديثات سوق منشورة حاليًا.
-          </div>
-        )}
+        </div>
 
+        {ctaUrl && ctaLabel ? (
         <div className="mt-8 text-center">
-          <a href={telegramLink} target="_blank" rel="noreferrer" className="btn-primary inline-flex items-center gap-2">
-            {(isArabic ? section.cta_label_ar : section.cta_label_en) || 'انضم لتيليجرام'}
+          <a href={ctaUrl} target="_blank" rel="noreferrer" className="btn-primary inline-flex items-center gap-2">
+            {ctaLabel}
           </a>
         </div>
+        ) : null}
       </div>
     </section>
   )

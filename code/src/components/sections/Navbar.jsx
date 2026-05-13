@@ -7,14 +7,6 @@ import useApiData from '../../hooks/useApiData'
 import { useTheme } from '../../contexts/ThemeContext'
 
 const LIVE_REFRESH_INTERVAL = 0
-const ARABIC_MENU_LABELS = {
-  '#home': 'الرئيسية',
-  '#funded': 'الحسابات الممولة',
-  '#vip': 'VIP',
-  '#scalp': 'سكالب',
-  '#courses': 'الدورات',
-  '#offers': 'العروض',
-}
 
 const TelegramIcon = () => (
   <svg viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -22,21 +14,28 @@ const TelegramIcon = () => (
   </svg>
 )
 
-function normalizeMenuItems(menuItems = [], fallbackLinks = [], currentLanguage = 'en') {
-  if (Array.isArray(menuItems) && menuItems.length > 0) {
-    return [...menuItems]
-      .filter((item) => item?.is_visible !== false)
-      .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
-      .map((item) => ({
-        name: currentLanguage === 'ar'
-          ? ARABIC_MENU_LABELS[item.href] || item.label_ar || item.label_en
-          : item.label_en || item.label_ar,
-        href: item.href || '#home',
-        newTab: !!item.new_tab,
-      }))
-  }
+function normalizeHref(href = '#home') {
+  const trimmed = String(href || '').trim()
+  if (!trimmed) return ''
+  if (trimmed.startsWith('#') || trimmed.startsWith('/') || /^https?:\/\//i.test(trimmed)) return trimmed
+  if (trimmed.endsWith('#')) return `#${trimmed.slice(0, -1)}`
+  return trimmed
+}
 
-  return fallbackLinks
+function normalizeMenuItems(menuItems = [], currentLanguage = 'en') {
+  if (!Array.isArray(menuItems)) return []
+
+  return [...menuItems]
+    .filter((item) => item?.is_visible !== false)
+    .sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+    .map((item) => ({
+      name: currentLanguage === 'ar'
+        ? item.label_ar || item.label_en
+        : item.label_en || item.label_ar,
+      href: normalizeHref(item.href),
+      newTab: !!item.new_tab,
+    }))
+    .filter((item) => item.name && item.href)
 }
 
 export default function Navbar({
@@ -45,10 +44,11 @@ export default function Navbar({
   navSections = [],
   homeAnchor = 'home',
   navigationSettings = {},
+  linkBasePath = '',
 }) {
-  const { t } = useTranslation()
   const [isScrolled, setIsScrolled] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
+  const [logoFailed, setLogoFailed] = useState(false)
   const { isDarkMode, toggleTheme } = useTheme()
   const { data: settings } = useApiData(
     settingsAPI.getPublic,
@@ -58,17 +58,13 @@ export default function Navbar({
     { refreshInterval: LIVE_REFRESH_INTERVAL }
   )
 
-  const websiteName = settings.general?.website_name?.value || 'Hunter Trading'
+  const websiteName = settings.general?.website_name?.value || ''
   const siteLogo = settings.general?.site_logo?.value || ''
-  const telegramUrl = settings.general?.telegram_url?.value || settings.general?.free_telegram_url?.value || 'https://t.me/hunter_tradeing'
-  const defaultLinks = navSections.map((section) => ({
-    name: currentLanguage === 'ar' ? section.label_ar || section.label : section.label_en || section.label,
-    href: `#${section.anchor}`,
-    newTab: false,
-  }))
+  const telegramUrl = settings.general?.telegram_url?.value || settings.general?.free_telegram_url?.value || ''
+  const telegramLabel = navigationSettings.telegram_label || navigationSettings.telegram_label_ar || navigationSettings.telegram_label_en || ''
   const navLinks = useMemo(
-    () => normalizeMenuItems(navigationSettings.menu_items || [], defaultLinks, currentLanguage),
-    [navigationSettings.menu_items, defaultLinks, currentLanguage]
+    () => normalizeMenuItems(navigationSettings.menu_items || [], currentLanguage),
+    [navigationSettings.menu_items, currentLanguage]
   )
 
   useEffect(() => {
@@ -77,10 +73,22 @@ export default function Navbar({
     return () => window.removeEventListener('scroll', handleScroll)
   }, [])
 
+  useEffect(() => {
+    setLogoFailed(false)
+  }, [siteLogo])
+
+  const resolveHref = (href = '#home') => {
+    if (linkBasePath && href.startsWith('#')) {
+      return `${linkBasePath}${href}`
+    }
+
+    return href
+  }
+
   const renderLink = (link, className) => (
     <a
       key={`${link.name}-${link.href}`}
-      href={link.href}
+      href={resolveHref(link.href)}
       target={link.newTab ? '_blank' : undefined}
       rel={link.newTab ? 'noreferrer' : undefined}
       className={className}
@@ -94,53 +102,60 @@ export default function Navbar({
     <motion.nav
       initial={{ y: -100 }}
       animate={{ y: 0 }}
-      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
-        isScrolled ? 'border-b border-white/10 bg-hunter-bg/90 backdrop-blur-xl' : 'bg-transparent'
+      className={`site-navbar fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
+        isScrolled ? 'site-navbar-scrolled' : 'site-navbar-floating'
       }`}
     >
       <div className="mx-auto max-w-7xl px-3 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between gap-3 md:h-20">
-          <a href={`#${homeAnchor}`} className="flex min-w-0 items-center">
-            {siteLogo ? (
-              <img src={siteLogo} alt={websiteName} className="h-10 w-auto max-w-[9rem] object-contain sm:h-11 sm:max-w-[11rem] lg:max-w-[13rem]" />
-            ) : (
-              <span className="truncate font-heading text-lg font-bold text-hunter-text sm:text-xl lg:text-2xl">{websiteName}</span>
-            )}
+          <a href={resolveHref(`#${homeAnchor}`)} className="flex min-w-0 items-center">
+            {siteLogo && !logoFailed ? (
+              <img
+                src={siteLogo}
+                alt={websiteName}
+                className="h-10 w-auto max-w-[9rem] object-contain sm:h-11 sm:max-w-[11rem] lg:max-w-[13rem]"
+                onError={() => setLogoFailed(true)}
+              />
+            ) : websiteName ? (
+              <span className="site-navbar-brand truncate font-heading text-lg font-bold sm:text-xl lg:text-2xl">{websiteName}</span>
+            ) : null}
           </a>
 
           <div className="hidden min-w-0 flex-1 items-center justify-center gap-5 lg:flex xl:gap-8">
-            {navLinks.map((link) => renderLink(link, 'text-sm font-medium text-hunter-text-muted transition-colors hover:text-hunter-green xl:text-base'))}
+            {navLinks.map((link) => renderLink(link, 'site-navbar-link text-sm font-semibold transition-colors xl:text-base'))}
           </div>
 
           <div className="flex items-center gap-2 sm:gap-3">
             <button
               onClick={() => onLanguageChange(currentLanguage === 'en' ? 'ar' : 'en')}
-              className="flex items-center gap-2 rounded-xl px-2.5 py-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 sm:px-3"
+              className="site-navbar-control flex items-center gap-2 rounded-xl px-2.5 py-2 transition-colors sm:px-3"
               aria-label="Toggle language"
             >
-              <Globe className="h-5 w-5 text-hunter-text-muted" />
-              <span className="text-sm font-medium uppercase text-hunter-text-muted">{currentLanguage}</span>
+              <Globe className="h-5 w-5" />
+              <span className="text-sm font-semibold uppercase">{currentLanguage}</span>
             </button>
 
             <button
               onClick={toggleTheme}
-              className="rounded-xl p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5"
+              className="site-navbar-control rounded-xl p-2 transition-colors"
               aria-label="Toggle theme"
             >
-              {isDarkMode ? <Sun className="h-5 w-5 text-hunter-text-muted" /> : <Moon className="h-5 w-5 text-hunter-text-muted" />}
+              {isDarkMode ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
             </button>
 
-            <button onClick={() => window.open(telegramUrl, '_blank')} className="btn-primary hidden items-center gap-2 !px-4 !py-2 lg:flex">
-              <TelegramIcon />
-              <span>{t('hero.cta_telegram')}</span>
-            </button>
+            {telegramUrl && telegramLabel ? (
+              <button onClick={() => window.open(telegramUrl, '_blank')} className="btn-primary hidden items-center gap-2 !px-4 !py-2 lg:flex">
+                <TelegramIcon />
+                <span>{telegramLabel}</span>
+              </button>
+            ) : null}
 
             <button
               onClick={() => setIsMobileMenuOpen((value) => !value)}
-              className="rounded-xl p-2 transition-colors hover:bg-black/5 dark:hover:bg-white/5 lg:hidden"
+              className="site-navbar-control rounded-xl p-2 transition-colors lg:hidden"
               aria-label="Toggle menu"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6 text-hunter-text" /> : <Menu className="h-6 w-6 text-hunter-text" />}
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </button>
           </div>
         </div>
@@ -150,19 +165,21 @@ export default function Navbar({
         <motion.div
           initial={{ opacity: 0, height: 0 }}
           animate={{ opacity: 1, height: 'auto' }}
-          className="theme-surface mx-3 mt-2 overflow-hidden rounded-3xl lg:hidden"
+          className="site-navbar-mobile-menu mx-3 mt-2 overflow-hidden rounded-3xl lg:hidden"
         >
           <div className="space-y-3 px-4 py-4">
             {navLinks.map((link) =>
               renderLink(
                 link,
-                'block rounded-2xl px-3 py-3 text-hunter-text-muted transition-colors hover:bg-black/5 hover:text-hunter-green dark:hover:bg-white/5'
+                'site-navbar-mobile-link block rounded-2xl px-3 py-3 transition-colors'
               )
             )}
-            <button onClick={() => window.open(telegramUrl, '_blank')} className="btn-primary mt-4 flex w-full items-center justify-center gap-2">
-              <TelegramIcon />
-              <span>{t('hero.cta_telegram')}</span>
-            </button>
+            {telegramUrl && telegramLabel ? (
+              <button onClick={() => window.open(telegramUrl, '_blank')} className="btn-primary mt-4 flex w-full items-center justify-center gap-2">
+                <TelegramIcon />
+                <span>{telegramLabel}</span>
+              </button>
+            ) : null}
           </div>
         </motion.div>
       ) : null}

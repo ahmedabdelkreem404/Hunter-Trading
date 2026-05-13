@@ -9,12 +9,13 @@ import {
   Crown,
   Flame,
   GraduationCap,
-  Info,
   Package2,
   ShieldCheck,
 } from 'lucide-react'
 import { sectionSettingsAPI, servicesAPI } from '../../api'
 import useApiData from '../../hooks/useApiData'
+import SmartMedia from '../ui/SmartMedia'
+import { getSafePosterUrl, resolveMediaType } from '../../utils/media'
 
 const selectServices = (response) => response.data ?? []
 const LIVE_REFRESH_INTERVAL = 0
@@ -47,10 +48,10 @@ function getFeatures(service, isArabic) {
   return String(text).split(/\r?\n|•|-/).map((item) => item.trim()).filter(Boolean)
 }
 
-function formatTimeLeft(targetDate, isArabic) {
+function formatTimeLeft(targetDate, isArabic, compact = false) {
   const diff = new Date(targetDate).getTime() - Date.now()
   if (Number.isNaN(diff) || diff <= 0) {
-    return isArabic ? 'انتهى العرض' : 'Offer ended'
+    return ''
   }
 
   const totalSeconds = Math.floor(diff / 1000)
@@ -59,6 +60,16 @@ function formatTimeLeft(targetDate, isArabic) {
   const minutes = Math.floor((totalSeconds % 3600) / 60)
   const seconds = totalSeconds % 60
 
+  if (compact) {
+    if (isArabic) {
+      if (days > 0) return `${days}ي ${hours}س`
+      return `${hours}س ${minutes}د`
+    }
+
+    if (days > 0) return `${days}d ${hours}h`
+    return `${hours}h ${minutes}m`
+  }
+
   if (isArabic) {
     return `${days ? `${days}ي ` : ''}${hours}س ${minutes}د ${seconds}ث`
   }
@@ -66,10 +77,14 @@ function formatTimeLeft(targetDate, isArabic) {
   return `${days ? `${days}d ` : ''}${hours}h ${minutes}m ${seconds}s`
 }
 
-function TopChip({ icon: Icon, children }) {
+function TopChip({ icon: Icon, children, className = '' }) {
+  if (!children) {
+    return null
+  }
+
   return (
     <div
-      className="inline-flex max-w-full min-w-0 items-center gap-2 rounded-full border px-2.5 py-1 text-xs font-semibold sm:px-3"
+      className={`service-card-chip max-w-full min-w-0 items-center gap-[0.45em] rounded-full border px-[0.8em] py-[0.35em] font-semibold sm:px-3 sm:py-1 sm:text-xs ${className || 'inline-flex'}`}
       style={{
         color: 'var(--product-accent)',
         borderColor: 'color-mix(in srgb, var(--product-accent) 28%, transparent)',
@@ -82,10 +97,6 @@ function TopChip({ icon: Icon, children }) {
   )
 }
 
-function isVideoUrl(url = '') {
-  return /\.(mp4|webm|mov)(\?|#|$)/i.test(url)
-}
-
 function asBool(value, fallback = false) {
   if (value === undefined || value === null || value === '') return fallback
   return value === true || value === 1 || value === '1'
@@ -93,45 +104,25 @@ function asBool(value, fallback = false) {
 
 function ProductCardMedia({ product, title, compact = false }) {
   const explicitMediaUrl = product.card_media_url || ''
-  const mediaType = product.card_media_type || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
   const fallbackImageUrl = product.thumbnail_url || product.cover_url || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
+  const mediaType = resolveMediaType(mediaUrl, explicitMediaUrl ? product.card_media_type || 'image' : product.cover_media_type || product.card_media_type || 'image')
+  const posterUrl = getSafePosterUrl(product.card_video_poster_url, product.thumbnail_url, product.cover_video_poster_url)
   const mediaClassName = 'aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:aspect-[16/10]'
-
-  if (mediaType === 'video' && explicitMediaUrl) {
-    return (
-      <video
-        src={explicitMediaUrl}
-        poster={product.card_video_poster_url || product.thumbnail_url || undefined}
-        className={mediaClassName}
-        autoPlay={asBool(product.card_video_autoplay, false) && asBool(product.card_video_muted, true)}
-        muted={asBool(product.card_video_muted, true)}
-        loop={asBool(product.card_video_loop, true)}
-        playsInline
-        preload="metadata"
-      />
-    )
-  }
-
-  if (mediaType === 'embed' && explicitMediaUrl) {
-    return (
-      <iframe
-        src={explicitMediaUrl}
-        title={title}
-        className="aspect-[4/3] w-full sm:aspect-[16/10]"
-        loading="lazy"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    )
-  }
 
   if (mediaUrl) {
     return (
-      <img
+      <SmartMedia
         src={mediaUrl}
+        type={mediaType}
         alt={title}
+        poster={posterUrl}
         className={mediaClassName}
+        iframeClassName="aspect-[4/3] w-full sm:aspect-[16/10]"
+        autoPlay
+        muted
+        loop={asBool(product.card_video_loop, true)}
+        controls={asBool(product.card_video_controls, false)}
       />
     )
   }
@@ -166,7 +157,7 @@ function getCardCtaLabel(product, isScalp, isArabic) {
   const label = isArabic ? product.cta_label_ar : product.cta_label_en
 
   if (!isScalp) {
-    return label || (isArabic ? 'اشتر الآن' : 'Buy Now')
+    return label || ''
   }
 
   const normalized = String(label || '').trim().toLowerCase()
@@ -175,7 +166,7 @@ function getCardCtaLabel(product, isScalp, isArabic) {
     return label
   }
 
-  return isArabic ? 'عرض الشرح' : 'View details'
+  return label || ''
 }
 
 function CardAction({ action, children, className, style }) {
@@ -194,14 +185,60 @@ function CardAction({ action, children, className, style }) {
   )
 }
 
+function normalizeSectionUrl(url = '') {
+  const trimmed = String(url || '').trim()
+  if (!trimmed) return ''
+  if (/^(https?:|mailto:|tel:|sms:|whatsapp:|tg:|#|\/)/i.test(trimmed)) return trimmed
+  return `https://${trimmed}`
+}
+
+function SectionCta({ href, children, isArabic }) {
+  const normalizedHref = normalizeSectionUrl(href)
+  if (!normalizedHref || !children) return null
+
+  const isExternal = /^(https?:|mailto:|tel:|sms:|whatsapp:|tg:)/i.test(normalizedHref)
+  const className = "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/8 px-5 py-3 text-sm font-bold text-hunter-text shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:border-[color:var(--product-accent)] hover:bg-white/12 sm:px-6 sm:text-base"
+  const content = (
+    <>
+      <span>{children}</span>
+      <ArrowRight className={`h-4 w-4 shrink-0 ${isArabic ? 'rotate-180' : ''}`} />
+    </>
+  )
+
+  if (isExternal) {
+    return (
+      <a href={normalizedHref} target="_blank" rel="noreferrer" className={className}>
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <a href={normalizedHref} className={className}>
+      {content}
+    </a>
+  )
+}
+
 function OfferCountdown({ value, isArabic }) {
-  const [label, setLabel] = useState(() => formatTimeLeft(value, isArabic))
+  const [isCompact, setIsCompact] = useState(() => (typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false))
+  const [label, setLabel] = useState(() => formatTimeLeft(value, isArabic, isCompact))
 
   useEffect(() => {
-    setLabel(formatTimeLeft(value, isArabic))
-    const timer = window.setInterval(() => setLabel(formatTimeLeft(value, isArabic)), 1000)
+    if (typeof window === 'undefined') return undefined
+
+    const query = window.matchMedia('(max-width: 767px)')
+    const update = () => setIsCompact(query.matches)
+    update()
+    query.addEventListener('change', update)
+    return () => query.removeEventListener('change', update)
+  }, [])
+
+  useEffect(() => {
+    setLabel(formatTimeLeft(value, isArabic, isCompact))
+    const timer = window.setInterval(() => setLabel(formatTimeLeft(value, isArabic, isCompact)), isCompact ? 60000 : 1000)
     return () => window.clearInterval(timer)
-  }, [isArabic, value])
+  }, [isArabic, isCompact, value])
 
   return <TopChip icon={Clock3}>{label}</TopChip>
 }
@@ -240,14 +277,22 @@ export default function PremiumProductSection({
   const isOffers = category === 'offers'
   const sectionKey = category === 'scalp' ? 'scalp' : category
   const section = sections.find((item) => item.section_key === sectionKey) ?? {}
-  const resolvedTitle = (isArabic ? section.title_ar : section.title_en) || title
-  const resolvedSubtitle = (isArabic ? section.subtitle_ar : section.subtitle_en) || subtitle
+  const resolvedTitle = (isArabic ? section.title_ar || section.title_en : section.title_en || section.title_ar) || title || ''
+  const resolvedSubtitle = (isArabic ? section.subtitle_ar || section.subtitle_en : section.subtitle_en || section.subtitle_ar) || subtitle || ''
+  const resolvedBody = (isArabic ? section.body_ar || section.body_en : section.body_en || section.body_ar) || ''
+  const resolvedSectionCtaLabel = (isArabic ? section.cta_label_ar || section.cta_label_en : section.cta_label_en || section.cta_label_ar) || ''
+  const resolvedSectionCtaUrl = section.cta_url || ''
+  const resolvedBadgeLabel = badgeLabel || resolvedTitle
 
   const visibleProducts = useMemo(() => {
     if (!showExpandToggle || showAll) return products
     return products.slice(0, 3)
   }, [products, showAll, showExpandToggle])
-  const gridClassName = 'grid grid-cols-2 gap-3 sm:gap-5 xl:grid-cols-3'
+  const gridClassName = 'service-product-grid'
+
+  if (products.length === 0 && !resolvedTitle && !resolvedSubtitle && !resolvedBody && !resolvedSectionCtaLabel) {
+    return null
+  }
 
   return (
     <section
@@ -277,11 +322,25 @@ export default function PremiumProductSection({
           transition={{ duration: 0.5 }}
           className="mx-auto mb-8 max-w-3xl text-center sm:mb-10 md:mb-12"
         >
-          <div className="mb-4 flex justify-center">
-            <TopChip icon={Icon}>{badgeLabel}</TopChip>
-          </div>
-          <h2 className="section-title">{resolvedTitle}</h2>
-          <p className="section-subtitle">{resolvedSubtitle}</p>
+          {resolvedBadgeLabel ? (
+            <div className="mb-4 flex justify-center">
+              <TopChip icon={Icon}>{resolvedBadgeLabel}</TopChip>
+            </div>
+          ) : null}
+          {resolvedTitle ? <h2 className="section-title">{resolvedTitle}</h2> : null}
+          {resolvedSubtitle ? <p className="section-subtitle">{resolvedSubtitle}</p> : null}
+          {resolvedBody ? (
+            <p className="mx-auto mt-4 max-w-3xl whitespace-pre-line text-sm leading-8 text-hunter-text-muted sm:text-base sm:leading-9">
+              {resolvedBody}
+            </p>
+          ) : null}
+          {resolvedSectionCtaLabel && resolvedSectionCtaUrl ? (
+            <div className="mt-6 flex justify-center">
+              <SectionCta href={resolvedSectionCtaUrl} isArabic={isArabic}>
+                {resolvedSectionCtaLabel}
+              </SectionCta>
+            </div>
+          ) : null}
         </motion.div>
 
         {products.length > 0 ? (
@@ -296,12 +355,12 @@ export default function PremiumProductSection({
                   : product.short_description_en || product.subtitle_en || product.short_description_ar || product.subtitle_ar
                 const isScalp = category === 'scalp' || product.type === 'scalp'
                 const action = resolveCardAction(product, isScalp)
-                const detailsLabel = isArabic ? product.details_button_label_ar || 'التفاصيل' : product.details_button_label_en || 'Details'
 
                 const compactScalp = isScalp
                 const ctaLabel = getCardCtaLabel(product, isScalp, isArabic)
                 const visibleFeatures = features.slice(0, compactScalp ? 2 : 3)
                 const singleCard = visibleProducts.length === 1
+                const showMobileRibbon = Boolean(ribbonText && !isOffers)
 
                 return (
                   <motion.article
@@ -310,8 +369,8 @@ export default function PremiumProductSection({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.45, delay: index * 0.06 }}
-                    className={`group relative h-full overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-2 shadow-[0_18px_44px_rgba(0,0,0,0.18)] sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_60px_rgba(0,0,0,0.16)] ${
-                      singleCard ? 'col-span-2 mx-auto w-full max-w-xs sm:max-w-md xl:col-span-1' : ''
+                    className={`service-product-card group relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-[4.5%] shadow-[0_18px_44px_rgba(0,0,0,0.18)] sm:h-full sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_60px_rgba(0,0,0,0.16)] ${
+                      singleCard ? 'service-product-card-single mx-auto w-full' : ''
                     }`}
                   >
                     <div
@@ -323,14 +382,16 @@ export default function PremiumProductSection({
 
                     {ribbonText ? (
                       <>
-                        <div
-                          className="absolute right-3 top-3 z-20 max-w-[45%] truncate rounded-full border border-white/10 px-2 py-0.5 text-center text-[10px] font-bold text-hunter-text shadow-lg backdrop-blur-sm sm:hidden"
-                          style={{
-                            background: 'linear-gradient(180deg, color-mix(in srgb, var(--product-accent) 82%, var(--bg-secondary) 18%) 0%, color-mix(in srgb, var(--product-accent-strong) 82%, var(--bg-secondary) 18%) 100%)',
-                          }}
-                        >
-                          {ribbonText}
-                        </div>
+                        {showMobileRibbon ? (
+                          <div
+                            className="service-card-ribbon absolute right-[7%] top-[5%] z-20 max-w-[50%] truncate rounded-full border border-white/10 px-[0.75em] py-[0.25em] text-center font-bold text-hunter-text shadow-lg backdrop-blur-sm sm:hidden"
+                            style={{
+                              background: 'linear-gradient(180deg, color-mix(in srgb, var(--product-accent) 82%, var(--bg-secondary) 18%) 0%, color-mix(in srgb, var(--product-accent-strong) 82%, var(--bg-secondary) 18%) 100%)',
+                            }}
+                          >
+                            {ribbonText}
+                          </div>
+                        ) : null}
                         <div
                           className="absolute right-[-2.55rem] top-5 z-20 hidden w-36 rotate-45 border border-white/10 px-10 py-1 text-center text-xs font-bold text-hunter-text shadow-lg backdrop-blur-sm sm:block"
                           style={{
@@ -342,81 +403,71 @@ export default function PremiumProductSection({
                       </>
                     ) : null}
 
-                    <div className="relative z-10 flex h-full flex-col rounded-2xl border border-white/10 bg-[color:var(--bg-secondary)]/55 p-2.5 sm:rounded-[1.65rem] sm:p-5">
-                      <div className={`mb-2 flex items-center gap-1.5 sm:mb-4 sm:gap-3 ${isOffers ? 'justify-between' : 'justify-center'}`}>
+                    <div className={`service-product-card-shell relative z-10 flex min-w-0 flex-col rounded-2xl border p-[6%] sm:h-full sm:rounded-[1.65rem] sm:p-5 ${showMobileRibbon ? 'pt-[20%] sm:pt-5' : ''}`}>
+                      <div className={`mb-[7%] flex min-w-0 flex-wrap items-center gap-[4%] sm:mb-4 sm:gap-3 ${isOffers ? 'justify-center sm:justify-between' : 'justify-center'}`}>
                         {isOffers ? (
                           <>
-                            {product.offer_ends_at ? <OfferCountdown value={product.offer_ends_at} isArabic={isArabic} /> : <div />}
-                            <TopChip icon={Icon}>{badgeLabel}</TopChip>
+                            {product.offer_ends_at ? <OfferCountdown value={product.offer_ends_at} isArabic={isArabic} /> : <TopChip icon={Icon}>{resolvedBadgeLabel}</TopChip>}
+                            <TopChip icon={Icon} className="hidden sm:inline-flex">{resolvedBadgeLabel}</TopChip>
                           </>
                         ) : (
-                          <TopChip icon={Icon}>{badgeLabel}</TopChip>
+                          <TopChip icon={Icon}>{resolvedBadgeLabel}</TopChip>
                         )}
                       </div>
 
                       <div
-                        className="relative mb-3 overflow-hidden rounded-xl border border-white/10 shadow-[0_10px_26px_rgba(0,0,0,0.18)] sm:mb-5 sm:rounded-[1.3rem]"
-                        style={{
-                          background: 'linear-gradient(180deg, color-mix(in srgb, var(--bg-secondary) 95%, white 5%) 0%, color-mix(in srgb, var(--bg-secondary) 98%, transparent) 100%)',
-                        }}
+                        className="service-product-card-media relative mb-[8%] overflow-hidden rounded-xl border shadow-[0_10px_26px_rgba(0,0,0,0.18)] sm:mb-5 sm:rounded-[1.3rem]"
                       >
                         <ProductCardMedia product={product} title={productTitle} compact />
                       </div>
 
                       <div className={centerCardContent ? 'text-center' : 'text-center sm:text-start'}>
-                        <h3 className="break-words font-heading text-[0.98rem] font-bold leading-snug text-hunter-text sm:text-2xl">{productTitle}</h3>
+                        <h3 className="service-card-title break-words font-heading font-bold sm:text-2xl">{productTitle}</h3>
                         {productDescription ? (
-                          <p className="mx-auto mt-3 hidden max-w-md text-sm leading-7 text-hunter-text-muted sm:block sm:mx-0">
+                          <p className="mx-auto mt-3 hidden max-w-md text-sm leading-7 text-hunter-text-muted sm:line-clamp-2 sm:block sm:min-h-[3.5rem] sm:mx-0">
                             {productDescription}
                           </p>
                         ) : null}
                         {isScalp ? (
-                          <div className="mt-2 inline-flex rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[0.68rem] font-semibold text-hunter-text-muted sm:mt-3 sm:px-3 sm:text-xs">
-                            {isArabic ? 'روابط ريفرال' : 'Referral links'}
+                          <div className="service-card-feature mt-[6%] inline-flex rounded-full border border-white/10 bg-white/5 px-[0.85em] py-[0.45em] font-semibold text-hunter-text-muted sm:mt-3 sm:px-3 sm:py-1 sm:text-xs">
+                            {ribbonText}
                           </div>
                         ) : (
-                          <div className="mt-2 font-heading text-xl font-bold sm:mt-3 sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
+                          <div className="service-card-price mt-[6%] font-heading font-bold sm:mt-3 sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
                             {formatMoney(product.price, product.currency)}
                           </div>
                         )}
                       </div>
 
                       {visibleFeatures.length > 0 ? (
-                        <div className={`mt-3 space-y-2 sm:mt-5 sm:space-y-3 ${centerCardContent ? 'mx-auto max-w-md' : ''}`}>
+                        <div className={`mt-[9%] space-y-[0.55em] sm:mt-5 sm:space-y-3 ${centerCardContent ? 'mx-auto max-w-md' : ''}`}>
                           {visibleFeatures.map((feature, featureIndex) => (
                             <div
                               key={`${product.id}-feature-${featureIndex}`}
-                              className={`${featureIndex > 0 ? 'hidden sm:flex' : 'flex'} items-start gap-1.5 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1.5 text-[0.68rem] leading-5 text-hunter-text-muted sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm sm:leading-6 ${centerCardContent ? 'justify-center text-center' : ''}`}
+                              className={`service-card-feature ${featureIndex > 0 ? 'hidden sm:flex' : 'flex'} items-start gap-[0.45em] rounded-lg border border-white/10 bg-white/[0.03] px-[0.75em] py-[0.55em] text-hunter-text-muted sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm sm:leading-6 ${centerCardContent ? 'justify-center text-center' : ''}`}
                             >
-                              <CheckCircle2 className="mt-0.5 h-3.5 w-3.5 shrink-0 sm:h-4 sm:w-4" style={{ color: 'var(--product-accent)' }} />
+                              <CheckCircle2 className="mt-[0.2em] h-[1.05em] w-[1.05em] shrink-0 sm:h-4 sm:w-4" style={{ color: 'var(--product-accent)' }} />
                               <span className="line-clamp-2">{feature}</span>
                             </div>
                           ))}
                         </div>
                       ) : null}
 
-                      <div className="mt-auto flex gap-2 pt-4 sm:gap-3 sm:pt-6">
+                      <div className={`flex min-w-0 pt-[10%] sm:mt-auto sm:pt-6 ${isScalp ? 'justify-center' : 'gap-[5%] sm:gap-3'}`}>
+                        {ctaLabel ? (
                         <CardAction
                           action={action}
-                          className="inline-flex min-h-11 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-xl px-2.5 py-2 text-center text-[0.78rem] font-semibold leading-tight text-hunter-bg transition hover:-translate-y-0.5 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base"
+                          className={`service-card-cta inline-flex min-w-0 items-center justify-center gap-[0.45em] rounded-xl px-[7%] py-[6%] text-center font-semibold text-hunter-bg transition hover:-translate-y-0.5 sm:min-h-12 sm:gap-2 sm:rounded-2xl sm:px-4 sm:py-3 sm:text-base ${
+                            isScalp ? 'w-full max-w-[14rem] flex-none' : 'flex-1'
+                          }`}
                           style={{
                             background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
                             boxShadow: '0 10px 22px color-mix(in srgb, var(--product-accent) 14%, transparent)',
                           }}
                         >
-                          <span className="leading-tight sm:truncate">{ctaLabel}</span>
-                          <ArrowRight className="h-3.5 w-3.5 shrink-0 rtl:rotate-180 sm:h-4 sm:w-4" />
+                          <span className="min-w-0 truncate whitespace-nowrap leading-tight">{ctaLabel}</span>
+                          <ArrowRight className="hidden h-[1em] w-[1em] shrink-0 rtl:rotate-180 min-[390px]:block sm:block sm:h-4 sm:w-4" />
                         </CardAction>
-
-                        {isScalp ? (
-                          <Link
-                            to={`/services/${product.slug}`}
-                            aria-label={`${detailsLabel}: ${productTitle}`}
-                            title={detailsLabel}
-                            className="inline-flex h-11 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/5 text-hunter-text transition hover:border-hunter-green hover:text-hunter-green sm:h-12 sm:w-12 sm:rounded-2xl"
-                          >
-                            <Info className="h-4 w-4 sm:h-5 sm:w-5" />
-                          </Link>
                         ) : null}
                       </div>
                     </div>
@@ -425,7 +476,7 @@ export default function PremiumProductSection({
               })}
             </div>
 
-            {showExpandToggle && products.length > 3 ? (
+            {showExpandToggle && products.length > 3 && (showAll ? collapseLabel : expandLabel) ? (
               <motion.div
                 initial={{ opacity: 0, y: 16 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -443,12 +494,7 @@ export default function PremiumProductSection({
               </motion.div>
             ) : null}
           </>
-        ) : (
-          <div className="rounded-[2rem] border border-white/10 bg-hunter-bg p-10 text-center">
-            <Package2 className="mx-auto h-12 w-12" style={{ color: 'color-mix(in srgb, var(--product-accent) 72%, transparent)' }} />
-            <p className="mt-4 text-hunter-text-muted">{emptyText}</p>
-          </div>
-        )}
+        ) : null}
       </div>
     </section>
   )

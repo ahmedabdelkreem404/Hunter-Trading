@@ -18,10 +18,10 @@ import ScrollToTop from './components/ui/ScrollToTop'
 import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { PUBLIC_CONTENT_CHANGED_EVENT, invalidatePublicCache, sectionSettingsAPI, settingsAPI } from './api'
 import useApiData from './hooks/useApiData'
-import { buildHomepageSectionsFromSettings, getVisibleHomepageSections, parseHomepageLayout } from './utils/sectionLayout'
+import { buildHomepageSectionsFromSettings } from './utils/sectionLayout'
 
 const LIVE_REFRESH_INTERVAL = 0
-const SECTION_REFRESH_INTERVAL = 3000
+const SECTION_REFRESH_INTERVAL = 0
 
 const sectionComponents = {
   hero: Hero,
@@ -39,16 +39,15 @@ function AppContent() {
   const { i18n } = useTranslation()
   const { isDarkMode } = useTheme()
   const [showLeadMagnet, setShowLeadMagnet] = useState(false)
-  const [isLoading, setIsLoading] = useState(true)
   const [contentRevision, setContentRevision] = useState(0)
-  const { data: settings } = useApiData(
+  const { data: settings, loading: settingsLoading } = useApiData(
     settingsAPI.getPublic,
     {},
     (response) => response.data ?? {},
     [contentRevision],
     { refreshInterval: LIVE_REFRESH_INTERVAL }
   )
-  const { data: sectionSettings } = useApiData(
+  const { data: sectionSettings, loading: sectionsLoading } = useApiData(
     sectionSettingsAPI.getPublic,
     [],
     (response) => response.data ?? [],
@@ -56,19 +55,22 @@ function AppContent() {
     { refreshInterval: SECTION_REFRESH_INTERVAL }
   )
   const generalSettings = settings.general ?? {}
-  const homepageLayoutValue =
-    settings.layout?.homepage_sections?.value ??
-    settings.general?.homepage_sections?.value
-
-  const fallbackVisibleSections = getVisibleHomepageSections(parseHomepageLayout(homepageLayoutValue))
   const managedSections = buildHomepageSectionsFromSettings(sectionSettings)
-  const visibleSections = managedSections.length > 0
-    ? managedSections.filter((section) => section.enabled)
-    : fallbackVisibleSections
+  const visibleSections = managedSections.filter((section) => section.enabled)
   const navigationSection = sectionSettings.find((section) => section.section_key === 'navigation') ?? null
   const footerSection = sectionSettings.find((section) => section.section_key === 'footer') ?? null
   const firstVisibleAnchor = visibleSections[0]?.anchor ?? 'home'
   const navSections = visibleSections.filter((section) => section.showInNav)
+  const navigationMenuItems = navigationSection?.settings?.menu_items ?? []
+  const leadMagnetEnabled = ['1', 'true', 'yes', 'on'].includes(String(generalSettings.lead_magnet_enabled?.value || '').toLowerCase())
+  const footerSettings = footerSection?.settings || {}
+  const hasPublicShell = Boolean(
+    generalSettings.website_name?.value ||
+    generalSettings.site_logo?.value ||
+    navSections.length ||
+    navigationMenuItems.length ||
+    Object.keys(footerSettings).length
+  )
   const heroPrimaryCtaId = visibleSections.find((section) => section.id === 'vip')?.anchor
     ?? visibleSections.find((section) => section.id === 'market')?.anchor
     ?? visibleSections.find((section) => section.id !== 'hero')?.anchor
@@ -108,25 +110,25 @@ function AppContent() {
   useEffect(() => {
     // Check if user has seen lead magnet
     const hasSeenLeadMagnet = localStorage.getItem('leadMagnetSeen')
-    if (!hasSeenLeadMagnet) {
+    if (leadMagnetEnabled && !hasSeenLeadMagnet) {
       const timer = setTimeout(() => setShowLeadMagnet(true), 30000)
       return () => clearTimeout(timer)
     }
-  }, [])
+  }, [leadMagnetEnabled])
 
   useEffect(() => {
     // Exit intent detection
     const handleMouseLeave = (e) => {
       if (e.clientY <= 0) {
         const hasSeenLeadMagnet = localStorage.getItem('leadMagnetSeen')
-        if (!hasSeenLeadMagnet) {
+        if (leadMagnetEnabled && !hasSeenLeadMagnet) {
           setShowLeadMagnet(true)
         }
       }
     }
     document.addEventListener('mouseleave', handleMouseLeave)
     return () => document.removeEventListener('mouseleave', handleMouseLeave)
-  }, [])
+  }, [leadMagnetEnabled])
 
   const handleLeadMagnetClose = () => {
     setShowLeadMagnet(false)
@@ -139,10 +141,6 @@ function AppContent() {
   }
 
   useEffect(() => {
-    setTimeout(() => setIsLoading(false), 1000)
-  }, [i18n.language])
-
-  useEffect(() => {
     const root = document.documentElement
     const sharedThemeVars = {
       '--accent-primary': generalSettings.primary_color?.value || '#00ff88',
@@ -150,6 +148,12 @@ function AppContent() {
       '--accent-blue': generalSettings.accent_blue?.value || '#0066ff',
       '--accent-orange': generalSettings.accent_orange?.value || '#ff6b35',
       '--accent-orange-strong': generalSettings.accent_orange_strong?.value || '#ff8c42',
+      '--product-card-shell-bg': generalSettings.product_card_shell_bg?.value || (isDarkMode ? '#0a0a0f' : '#f8fafc'),
+      '--product-card-surface-bg': generalSettings.product_card_surface_bg?.value || (isDarkMode ? '#12121a' : '#ffffff'),
+      '--product-card-border-color': generalSettings.product_card_border_color?.value || (isDarkMode ? '#2a2a36' : '#d7deea'),
+      '--product-card-title-color': generalSettings.product_card_title_color?.value || (isDarkMode ? '#ffffff' : '#0f172a'),
+      '--product-card-body-color': generalSettings.product_card_body_color?.value || (isDarkMode ? '#9ca3af' : '#5b6b82'),
+      '--product-card-button-text-color': generalSettings.product_card_button_text_color?.value || '#050509',
     }
     const surfaceThemeVars = isDarkMode
       ? {
@@ -173,11 +177,13 @@ function AppContent() {
   }, [generalSettings, isDarkMode])
 
   useEffect(() => {
-    const websiteName = generalSettings.website_name?.value || 'Hunter Trading'
-    document.title = websiteName
+    const websiteName = generalSettings.website_name?.value || ''
+    if (websiteName) {
+      document.title = websiteName
+    }
   }, [generalSettings.website_name?.value])
 
-  if (isLoading) {
+  if (settingsLoading || sectionsLoading) {
     return (
       <div className="fixed inset-0 bg-hunter-bg flex items-center justify-center">
         <motion.div
@@ -191,13 +197,15 @@ function AppContent() {
 
   return (
     <div className="min-h-screen bg-hunter-bg transition-colors duration-300">
-      <Navbar
-        onLanguageChange={changeLanguage}
-        currentLanguage={i18n.language}
-        navSections={navSections}
-        homeAnchor={firstVisibleAnchor}
-        navigationSettings={navigationSection?.settings || {}}
-      />
+      {hasPublicShell ? (
+        <Navbar
+          onLanguageChange={changeLanguage}
+          currentLanguage={i18n.language}
+          navSections={navSections}
+          homeAnchor={firstVisibleAnchor}
+          navigationSettings={navigationSection?.settings || {}}
+        />
+      ) : null}
       
       <main>
         {visibleSections.map((section) => {
@@ -221,7 +229,7 @@ function AppContent() {
         })}
       </main>
       
-      <Footer homeAnchor={firstVisibleAnchor} quickSections={navSections} footerSettings={footerSection?.settings || {}} />
+      {hasPublicShell ? <Footer homeAnchor={firstVisibleAnchor} quickSections={navSections} footerSettings={footerSettings} /> : null}
       <TelegramFloating />
       <ScrollToTop />
       

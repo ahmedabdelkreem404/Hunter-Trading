@@ -4,6 +4,15 @@ const API_BASE = '/api'
 let csrfToken = ''
 const publicGetCache = new Map()
 export const PUBLIC_CONTENT_CHANGED_EVENT = 'hunter:public-content-changed'
+const PUBLIC_CACHE_PREFIX = 'hunter:public-api-cache:v3:'
+const PUBLIC_DATA_TTL = 15 * 60 * 1000
+
+function withCachedData(promise, cachedData = null) {
+  if (cachedData !== null && cachedData !== undefined) {
+    promise.__hunterCachedData = cachedData
+  }
+  return promise
+}
 
 const api = axios.create({
   baseURL: API_BASE,
@@ -20,6 +29,7 @@ export function setCsrfToken(token) {
 export function invalidatePublicCache(prefix = '') {
   if (!prefix) {
     publicGetCache.clear()
+    clearPersistentPublicCache()
     return
   }
 
@@ -28,6 +38,7 @@ export function invalidatePublicCache(prefix = '') {
       publicGetCache.delete(key)
     }
   }
+  clearPersistentPublicCache(prefix)
 }
 
 export function notifyPublicContentChanged(detail = {}) {
@@ -53,21 +64,69 @@ export function notifyPublicContentChanged(detail = {}) {
   }
 }
 
+function readPersistentPublicCache(key, ttl) {
+  if (typeof window === 'undefined' || ttl <= 0) return null
+
+  try {
+    const raw = window.localStorage.getItem(`${PUBLIC_CACHE_PREFIX}${key}`)
+    if (!raw) return null
+    const cached = JSON.parse(raw)
+    if (!cached?.data || Date.now() - Number(cached.timestamp || 0) > ttl) {
+      return null
+    }
+    return cached
+  } catch {
+    return null
+  }
+}
+
+function writePersistentPublicCache(key, data) {
+  if (typeof window === 'undefined') return
+
+  try {
+    window.localStorage.setItem(`${PUBLIC_CACHE_PREFIX}${key}`, JSON.stringify({ data, timestamp: Date.now() }))
+  } catch {
+    // Ignore cache write failures. Public data still works from the live request.
+  }
+}
+
+function clearPersistentPublicCache(prefix = '') {
+  if (typeof window === 'undefined') return
+
+  try {
+    const storagePrefix = `${PUBLIC_CACHE_PREFIX}${prefix}`
+    Object.keys(window.localStorage)
+      .filter((key) => key.startsWith(storagePrefix))
+      .forEach((key) => window.localStorage.removeItem(key))
+  } catch {
+    // localStorage can be unavailable in private or locked-down browser contexts.
+  }
+}
+
 function cachedGet(url, options = {}, ttl = 60000) {
   const key = `${url}:${JSON.stringify(options.params || {})}`
   const cached = publicGetCache.get(key)
   const now = Date.now()
 
   if (cached?.data && now - cached.timestamp < ttl) {
-    return Promise.resolve(cached.data)
+    return withCachedData(Promise.resolve(cached.data), cached.data)
   }
 
   if (cached?.promise) {
     return cached.promise
   }
 
+  const persistentCached = readPersistentPublicCache(key, ttl)
+  if (persistentCached?.data) {
+    publicGetCache.set(key, { data: persistentCached.data, timestamp: persistentCached.timestamp, promise: null })
+    return withCachedData(Promise.resolve(persistentCached.data), persistentCached.data)
+  }
+
   const promise = api.get(url, options).then((data) => {
     publicGetCache.set(key, { data, timestamp: Date.now(), promise: null })
+    if (ttl > 0) {
+      writePersistentPublicCache(key, data)
+    }
     return data
   }).catch((error) => {
     publicGetCache.delete(key)
@@ -97,20 +156,20 @@ api.interceptors.response.use(
 )
 
 export const settingsAPI = {
-  getPublic: () => cachedGet('/settings/public', {}, 60000),
+  getPublic: () => cachedGet('/settings/public', {}, PUBLIC_DATA_TTL),
 }
 
 export const sectionSettingsAPI = {
-  getPublic: () => cachedGet('/sections', {}, 0),
+  getPublic: () => cachedGet('/sections', {}, PUBLIC_DATA_TTL),
 }
 
 export const coachAPI = {
-  getProfile: () => cachedGet('/coach', {}, 60000),
+  getProfile: () => cachedGet('/coach', {}, PUBLIC_DATA_TTL),
 }
 
 export const servicesAPI = {
-  getAll: (type) => cachedGet('/services', { params: { type } }, 30000),
-  getBySlug: (slug) => cachedGet(`/services/${slug}`, {}, 30000),
+  getAll: (type) => cachedGet('/services', { params: { type } }, PUBLIC_DATA_TTL),
+  getBySlug: (slug) => cachedGet(`/services/${slug}`, {}, PUBLIC_DATA_TTL),
 }
 
 export const checkoutAPI = {
@@ -121,12 +180,12 @@ export const checkoutAPI = {
 }
 
 export const marketAPI = {
-  getPublic: () => cachedGet('/market/updates', {}, 15000),
+  getPublic: () => cachedGet('/market/updates', {}, PUBLIC_DATA_TTL),
 }
 
 // Testimonials API
 export const testimonialsAPI = {
-  getAll: () => cachedGet('/testimonials', {}, 60000),
+  getAll: () => cachedGet('/testimonials', {}, PUBLIC_DATA_TTL),
 }
 
 // Leads API

@@ -11,7 +11,7 @@ export default function LeadMagnet({ onClose }) {
   const [status, setStatus] = useState('idle') // idle, loading, success, error
   const isArabic = document.documentElement.dir === 'rtl'
   const { data: settings } = useApiData(settingsAPI.getPublic, {}, (response) => response.data ?? {})
-  const telegramUrl = settings.general?.telegram_url?.value || settings.general?.free_telegram_url?.value || 'https://t.me/hunter_tradeing'
+  const telegramUrl = settings.general?.telegram_url?.value || settings.general?.free_telegram_url?.value || ''
 
   const handleSubmit = async (e) => {
     e.preventDefault()
@@ -24,8 +24,9 @@ export default function LeadMagnet({ onClose }) {
       // Close after showing success
       setTimeout(() => {
         onClose()
-        // Open Telegram after closing
-        window.open(telegramUrl, '_blank')
+        if (telegramUrl) {
+          window.open(telegramUrl, '_blank')
+        }
       }, 2000)
     } catch (error) {
       setStatus('error')

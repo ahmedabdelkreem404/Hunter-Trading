@@ -33,10 +33,9 @@ export default function AdminLogin() {
         <div className="rounded-2xl border border-gray-200 bg-white p-8 shadow-2xl dark:border-gray-700 dark:bg-gray-800">
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-xl bg-hunter-gradient">
-              <span className="font-heading text-3xl font-bold text-hunter-bg">H</span>
+              <Lock className="h-8 w-8 text-hunter-bg" />
             </div>
-            <h1 className="font-heading text-2xl font-bold text-gray-900 dark:text-white">Hunter Trading</h1>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">لوحة التحكم</p>
+            <h1 className="font-heading text-2xl font-bold text-gray-900 dark:text-white">لوحة التحكم</h1>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-5">
@@ -107,9 +106,6 @@ export default function AdminLogin() {
           </div>
         </div>
 
-        <p className="mt-4 text-center text-xs text-gray-500 dark:text-gray-400">
-          © 2024 Hunter Trading. جميع الحقوق محفوظة.
-        </p>
       </motion.div>
     </div>
   )

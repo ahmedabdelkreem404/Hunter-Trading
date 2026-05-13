@@ -100,12 +100,13 @@ class ServiceController
                 "INSERT INTO services
                 (type, slug, title_en, title_ar, subtitle_en, subtitle_ar, short_description_en, short_description_ar, full_description_en, full_description_ar,
                  price, compare_price, currency, cta_label_en, cta_label_ar, cta_url, badge_text_en, badge_text_ar, thumbnail_url, cover_url,
-                 cover_media_type, cover_video_poster_url, card_media_type, card_media_url, card_video_poster_url, card_video_autoplay,
-                 card_video_muted, card_video_loop, offer_starts_at, offer_ends_at, cta_action, referral_url, broker_name, broker_url,
+                 cover_media_type, cover_video_poster_url, cover_video_autoplay, cover_video_muted, cover_video_loop, cover_video_controls,
+                 card_media_type, card_media_url, card_video_poster_url, card_video_autoplay, card_video_muted, card_video_loop, card_video_controls,
+                 offer_starts_at, offer_ends_at, cta_action, referral_url, broker_name, broker_url,
                  terms_title_en, terms_title_ar, terms_content_en, terms_content_ar, risk_warning_en, risk_warning_ar, important_links_json,
                  details_button_label_en, details_button_label_ar, final_cta_label_en, final_cta_label_ar,
                  is_featured, is_visible, sort_order, metadata_json)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                 [
                     $data['type'],
                     $data['slug'],
@@ -127,14 +128,19 @@ class ServiceController
                     $data['badge_text_ar'] ?? null,
                     $data['thumbnail_url'] ?? null,
                     $data['cover_url'] ?? null,
-                    $this->normalizeMediaType($data['cover_media_type'] ?? 'image'),
+                    $this->normalizeMediaTypeForUrl($data['cover_url'] ?? '', $data['cover_media_type'] ?? 'image'),
                     $data['cover_video_poster_url'] ?? null,
-                    $this->normalizeMediaType($data['card_media_type'] ?? 'image'),
+                    isset($data['cover_video_autoplay']) ? (int) !!$data['cover_video_autoplay'] : 1,
+                    isset($data['cover_video_muted']) ? (int) !!$data['cover_video_muted'] : 1,
+                    isset($data['cover_video_loop']) ? (int) !!$data['cover_video_loop'] : 1,
+                    isset($data['cover_video_controls']) ? (int) !!$data['cover_video_controls'] : 0,
+                    $this->normalizeMediaTypeForUrl($data['card_media_url'] ?? '', $data['card_media_type'] ?? 'image'),
                     $data['card_media_url'] ?? null,
                     $data['card_video_poster_url'] ?? null,
-                    isset($data['card_video_autoplay']) ? (int) !!$data['card_video_autoplay'] : 0,
+                    isset($data['card_video_autoplay']) ? (int) !!$data['card_video_autoplay'] : 1,
                     isset($data['card_video_muted']) ? (int) !!$data['card_video_muted'] : 1,
                     isset($data['card_video_loop']) ? (int) !!$data['card_video_loop'] : 1,
+                    isset($data['card_video_controls']) ? (int) !!$data['card_video_controls'] : 0,
                     !empty($data['offer_starts_at']) ? $data['offer_starts_at'] : null,
                     !empty($data['offer_ends_at']) ? $data['offer_ends_at'] : null,
                     $this->normalizeCtaAction($data['cta_action'] ?? 'checkout'),
@@ -189,8 +195,9 @@ class ServiceController
                 'short_description_en', 'short_description_ar', 'full_description_en', 'full_description_ar',
                 'price', 'compare_price', 'currency', 'cta_label_en', 'cta_label_ar', 'cta_url',
                 'badge_text_en', 'badge_text_ar', 'thumbnail_url', 'cover_url', 'cover_media_type',
-                'cover_video_poster_url', 'card_media_type', 'card_media_url', 'card_video_poster_url',
-                'card_video_autoplay', 'card_video_muted', 'card_video_loop', 'offer_starts_at',
+                'cover_video_poster_url', 'cover_video_autoplay', 'cover_video_muted', 'cover_video_loop',
+                'cover_video_controls', 'card_media_type', 'card_media_url', 'card_video_poster_url',
+                'card_video_autoplay', 'card_video_muted', 'card_video_loop', 'card_video_controls', 'offer_starts_at',
                 'offer_ends_at', 'cta_action', 'referral_url', 'broker_name', 'broker_url',
                 'terms_title_en', 'terms_title_ar', 'terms_content_en', 'terms_content_ar',
                 'risk_warning_en', 'risk_warning_ar', 'details_button_label_en', 'details_button_label_ar',
@@ -205,16 +212,27 @@ class ServiceController
                 $fields[] = "{$field} = ?";
                 if (in_array($field, ['price', 'compare_price'], true)) {
                     $params[] = $data[$field] === '' || $data[$field] === null ? null : (float) $data[$field];
-                } elseif (in_array($field, ['is_featured', 'is_visible', 'sort_order', 'card_video_autoplay', 'card_video_muted', 'card_video_loop'], true)) {
+                } elseif (in_array($field, ['is_featured', 'is_visible', 'sort_order', 'card_video_autoplay', 'card_video_muted', 'card_video_loop', 'card_video_controls', 'cover_video_autoplay', 'cover_video_muted', 'cover_video_loop', 'cover_video_controls'], true)) {
                     $params[] = (int) $data[$field];
                 } elseif (in_array($field, ['offer_starts_at', 'offer_ends_at'], true)) {
                     $params[] = !empty($data[$field]) ? $data[$field] : null;
                 } elseif (in_array($field, ['cover_media_type', 'card_media_type'], true)) {
-                    $params[] = $this->normalizeMediaType($data[$field]);
+                    $pairedUrl = $field === 'cover_media_type' ? ($data['cover_url'] ?? '') : ($data['card_media_url'] ?? '');
+                    $params[] = $this->normalizeMediaTypeForUrl($pairedUrl, $data[$field]);
                 } elseif ($field === 'cta_action') {
                     $params[] = $this->normalizeCtaAction($data[$field]);
                 } else {
                     $params[] = $data[$field];
+                }
+            }
+
+            foreach ([
+                ['url' => 'cover_url', 'type' => 'cover_media_type'],
+                ['url' => 'card_media_url', 'type' => 'card_media_type'],
+            ] as $mediaPair) {
+                if (array_key_exists($mediaPair['url'], $data) && !array_key_exists($mediaPair['type'], $data)) {
+                    $fields[] = "{$mediaPair['type']} = ?";
+                    $params[] = $this->normalizeMediaTypeForUrl($data[$mediaPair['url']], 'image');
                 }
             }
 
@@ -298,6 +316,24 @@ class ServiceController
         return in_array($value, $this->allowedMediaTypes, true) ? $value : 'image';
     }
 
+    private function normalizeMediaTypeForUrl(?string $url, ?string $value): string
+    {
+        $cleanUrl = trim((string) $url);
+        if ($cleanUrl !== '') {
+            $path = strtolower((string) parse_url($cleanUrl, PHP_URL_PATH));
+            if (preg_match('/\.(mp4|webm|mov|m4v)$/', $path)) {
+                return 'video';
+            }
+
+            $host = strtolower((string) parse_url($cleanUrl, PHP_URL_HOST));
+            if (strpos($host, 'youtube.com') !== false || strpos($host, 'youtu.be') !== false || strpos($host, 'vimeo.com') !== false) {
+                return 'embed';
+            }
+        }
+
+        return $this->normalizeMediaType($value);
+    }
+
     private function normalizeCtaAction(?string $value): string
     {
         return in_array($value, $this->allowedCtaActions, true) ? $value : 'checkout';
@@ -373,7 +409,7 @@ class ServiceController
                     [
                         $serviceId,
                         $url,
-                        $this->normalizeMediaType($media['media_type'] ?? 'image'),
+                        $this->normalizeMediaTypeForUrl($url, $media['media_type'] ?? 'image'),
                         $media['alt_text_en'] ?? null,
                         $media['alt_text_ar'] ?? null,
                         $index + 1,

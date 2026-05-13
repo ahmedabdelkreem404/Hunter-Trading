@@ -15,10 +15,8 @@ import {
 } from 'lucide-react'
 import { servicesAPI, settingsAPI } from '../api'
 import useApiData from '../hooks/useApiData'
-
-function isVideoUrl(url = '') {
-  return /\.(mp4|webm|mov)(\?|#|$)/i.test(url)
-}
+import SmartMedia from '../components/ui/SmartMedia'
+import { getSafePosterUrl, resolveMediaType } from '../utils/media'
 
 function normalizeExternalUrl(url = '') {
   const trimmed = String(url).trim()
@@ -31,47 +29,63 @@ function sortedLinks(links = []) {
   return [...links].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
 }
 
+function visibleLinks(links = []) {
+  return sortedLinks(links).filter((link) => link && link.is_visible !== false && String(link.url || '').trim())
+}
+
 function textValue(item = {}, isArabic, arKey, enKey) {
   return isArabic ? item[arKey] || item[enKey] : item[enKey] || item[arKey]
 }
 
-function ServiceMediaViewer({ service, title }) {
+function asBool(value, fallback = false) {
+  if (value === undefined || value === null || value === '') return fallback
+  return value === true || value === 1 || value === '1'
+}
+
+function ServiceMediaViewer({ service, title, fit = 'cover' }) {
   const hasCoverMedia = Boolean(service.cover_url)
   const explicitMediaUrl = hasCoverMedia ? service.cover_url : service.card_media_url || ''
   const explicitMediaType = hasCoverMedia ? service.cover_media_type : service.card_media_type
-  const mediaType = explicitMediaType || (isVideoUrl(explicitMediaUrl) ? 'video' : 'image')
-  const fallbackImageUrl = service.thumbnail_url || ''
+  const posterUrl = getSafePosterUrl(service.cover_video_poster_url, service.card_video_poster_url, service.thumbnail_url)
+  const fallbackImageUrl = service.thumbnail_url || posterUrl || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
-  const posterUrl = service.cover_video_poster_url || service.card_video_poster_url || service.thumbnail_url || ''
+  const mediaType = resolveMediaType(mediaUrl, explicitMediaType || 'image')
+  const mediaAutoPlay = hasCoverMedia
+    ? asBool(service.cover_video_autoplay, true)
+    : asBool(service.card_video_autoplay, true)
+  const mediaMuted = hasCoverMedia
+    ? asBool(service.cover_video_muted, true)
+    : asBool(service.card_video_muted, true)
+  const mediaLoop = hasCoverMedia
+    ? asBool(service.cover_video_loop, true)
+    : asBool(service.card_video_loop, true)
+  const mediaControls = hasCoverMedia
+    ? asBool(service.cover_video_controls, false)
+    : asBool(service.card_video_controls, false)
 
-  if (mediaType === 'video' && explicitMediaUrl) {
-    return (
-      <video
-        src={explicitMediaUrl}
-        poster={posterUrl || undefined}
-        className="h-full w-full object-cover"
-        controls
-        playsInline
-        preload="metadata"
-      />
-    )
-  }
-
-  if (mediaType === 'embed' && explicitMediaUrl) {
-    return (
-      <iframe
-        src={explicitMediaUrl}
-        title={title}
-        className="h-full w-full"
-        loading="lazy"
-        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-        allowFullScreen
-      />
-    )
-  }
+  const objectFitClassName = fit === 'contain' ? 'object-contain bg-black/20' : 'object-cover'
 
   if (mediaUrl) {
-    return <img src={mediaUrl} alt={title} className="h-full w-full object-cover" />
+    const posterFallback = posterUrl ? (
+      <img src={posterUrl} alt={title} className={`h-full w-full ${objectFitClassName}`} loading="lazy" />
+    ) : null
+
+    return (
+      <SmartMedia
+        src={mediaUrl}
+        type={mediaType}
+        alt={title}
+        poster={posterUrl}
+        className={`h-full w-full ${objectFitClassName}`}
+        iframeClassName="h-full w-full"
+        autoPlay={mediaAutoPlay}
+        muted={mediaMuted}
+        loop={mediaLoop}
+        controls={mediaControls}
+        fallback={posterFallback}
+        showPosterBeforePlay={Boolean(posterUrl && !mediaAutoPlay)}
+      />
+    )
   }
 
   return (
@@ -82,15 +96,21 @@ function ServiceMediaViewer({ service, title }) {
 }
 
 function GalleryItem({ item, title }) {
-  if (item.media_type === 'video' || isVideoUrl(item.media_url)) {
-    return <video src={item.media_url} className="h-56 w-full rounded-2xl object-cover" controls playsInline preload="metadata" />
-  }
+  const mediaType = resolveMediaType(item.media_url, item.media_type || 'image')
 
-  if (item.media_type === 'embed') {
-    return <iframe src={item.media_url} title={title} className="h-56 w-full rounded-2xl" loading="lazy" allowFullScreen />
-  }
-
-  return <img src={item.media_url} alt={title} className="h-56 w-full rounded-2xl object-cover" loading="lazy" />
+  return (
+    <SmartMedia
+      src={item.media_url}
+      type={mediaType}
+      alt={title}
+      className="h-56 w-full rounded-2xl object-cover"
+      iframeClassName="h-56 w-full rounded-2xl"
+      autoPlay
+      muted
+      loop
+      controls={false}
+    />
+  )
 }
 
 function resolveFinalAction(service, general = {}) {
@@ -135,47 +155,62 @@ function FinalCTA({ service, general, isArabic }) {
 
 function platformButtonLabel(link, isArabic, index) {
   const raw = textValue(link, isArabic, 'label_ar', 'label_en') || (index === 0 ? 'GTC' : 'Valtex')
+  const buttonContext = `${raw} ${link.url || ''}`.toLowerCase()
+  if (/telegram|t\.me|whatsapp|wa\.me|join/i.test(buttonContext) || /تليجرام|تلجرام|واتساب|انضم/.test(raw)) {
+    return raw
+  }
   if (/فتح|open/i.test(raw)) return raw
-  return isArabic ? `فتح حساب في ${raw}` : `Open account in ${raw}`
+  if (/^(gtc|valtex|valetex)$/i.test(String(raw).trim())) {
+    return isArabic ? `فتح حساب في ${raw}` : `Open account in ${raw}`
+  }
+  return raw
 }
 
-function ScalpPlatformButtons({ links, isArabic, id }) {
-  const displayLinks = links.length > 0
-    ? sortedLinks(links)
-    : [
-        { label_en: 'GTC', label_ar: 'GTC', url: '', sort_order: 1 },
-        { label_en: 'Valtex', label_ar: 'Valtex', url: '', sort_order: 2 },
-      ]
+function getActionButtonStyle(link = {}) {
+  const text = `${link.label_en || ''} ${link.label_ar || ''} ${link.url || ''}`.toLowerCase()
+  if (text.includes('telegram') || text.includes('t.me')) {
+    return 'from-sky-500 via-cyan-500 to-blue-600 shadow-[0_12px_30px_rgba(14,165,233,0.25)] hover:shadow-[0_16px_38px_rgba(14,165,233,0.38)]'
+  }
+  if (text.includes('whatsapp') || text.includes('wa.me')) {
+    return 'from-emerald-500 via-green-500 to-teal-600 shadow-[0_12px_30px_rgba(34,197,94,0.22)] hover:shadow-[0_16px_38px_rgba(34,197,94,0.35)]'
+  }
+  if (text.includes('valtex')) {
+    return 'from-violet-500 via-blue-500 to-cyan-500 shadow-[0_12px_30px_rgba(99,102,241,0.24)] hover:shadow-[0_16px_38px_rgba(99,102,241,0.36)]'
+  }
+  return 'from-fuchsia-600 via-violet-500 to-blue-500 shadow-[0_12px_30px_rgba(160,45,255,0.26)] hover:shadow-[0_16px_38px_rgba(160,45,255,0.4)]'
+}
+
+function ScalpActionButtons({ links, service, isArabic, id }) {
+  const displayLinks = visibleLinks(links)
+  const fallbackLinks = displayLinks.length > 0
+    ? displayLinks
+    : service.referral_url
+      ? [{
+          label_en: service.final_cta_label_en || service.cta_label_en || service.broker_name || 'Open account',
+          label_ar: service.final_cta_label_ar || service.cta_label_ar || service.broker_name || 'فتح الحساب',
+          url: service.referral_url,
+          new_tab: true,
+          sort_order: 1,
+        }]
+      : []
 
   return (
-    <div id={id} className="grid grid-cols-2 gap-3 sm:gap-4">
-      {displayLinks.map((link, index) => {
-        const hasUrl = Boolean(String(link.url || '').trim())
+    <div id={id} className="grid gap-3 sm:grid-cols-2 sm:gap-4">
+      {fallbackLinks.map((link, index) => {
         const label = platformButtonLabel(link, isArabic, index)
-        const Wrapper = hasUrl ? 'a' : 'div'
-        const wrapperProps = hasUrl
-          ? {
-              href: normalizeExternalUrl(link.url),
-              target: link.new_tab === false ? undefined : '_blank',
-              rel: link.new_tab === false ? undefined : 'noreferrer',
-            }
-          : {}
+        const styleClassName = getActionButtonStyle(link)
 
         return (
-          <Wrapper
+          <a
             key={`${link.url}-${index}`}
-            {...wrapperProps}
-            className={`inline-flex min-h-[3.6rem] min-w-0 items-center justify-center gap-2 rounded-xl px-3 py-3 text-center text-sm font-bold text-white shadow-[0_12px_30px_rgba(160,45,255,0.28)] transition sm:text-base ${
-              hasUrl
-                ? 'bg-gradient-to-l from-blue-500 via-violet-500 to-fuchsia-600 hover:-translate-y-0.5 hover:shadow-[0_16px_38px_rgba(160,45,255,0.4)]'
-                : 'border border-dashed border-white/15 bg-white/5 text-slate-400'
-            }`}
+            href={normalizeExternalUrl(link.url)}
+            target={link.new_tab === false ? undefined : '_blank'}
+            rel={link.new_tab === false ? undefined : 'noreferrer'}
+            className={`inline-flex min-h-[3.65rem] min-w-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-l px-4 py-3 text-center text-sm font-bold text-white transition hover:-translate-y-0.5 sm:text-base ${styleClassName}`}
           >
-            <ArrowLeft className="h-4 w-4 shrink-0 rtl:rotate-180" />
-            <span className="min-w-0 leading-snug">
-              {hasUrl ? label : `${label.replace(/^فتح حساب في\s+/u, '').replace(/^Open account in\s+/i, '')} ${isArabic ? '- أضف الرابط' : '- Add link'}`}
-            </span>
-          </Wrapper>
+            <span className="min-w-0 leading-snug">{label}</span>
+            <ExternalLink className="h-4 w-4 shrink-0" />
+          </a>
         )
       })}
     </div>
@@ -184,13 +219,11 @@ function ScalpPlatformButtons({ links, isArabic, id }) {
 
 function ScalpFeatureGrid({ features, isArabic }) {
   const icons = [Zap, Gauge, Headphones, ShieldCheck]
-  const fallback = [
-    { label_ar: 'فروق أسعار منخفضة من 0.3 نقطة', label_en: 'Low spreads from 0.3 points' },
-    { label_ar: 'تنفيذ سريع أقل من 50 مللي ثانية', label_en: 'Fast execution under 50ms' },
-    { label_ar: 'دعم عملاء على مدار الساعة', label_en: '24/7 customer support' },
-    { label_ar: 'وسيط مرخص وآمن', label_en: 'Licensed and secure broker' },
-  ]
-  const items = features.length > 0 ? features : fallback
+  const items = features.filter((feature) => textValue(feature, isArabic, 'label_ar', 'label_en'))
+
+  if (items.length === 0) {
+    return null
+  }
 
   return (
     <div className="grid gap-3 sm:grid-cols-2">
@@ -210,13 +243,14 @@ function ScalpFeatureGrid({ features, isArabic }) {
 }
 
 function ScalpSteps({ steps, isArabic }) {
-  const fallback = [
-    { title_ar: 'اختر المنصة التي تفضلها', title_en: 'Choose your preferred platform' },
-    { title_ar: 'سجل بياناتك', title_en: 'Register your details' },
-    { title_ar: 'قم بالإيداع في حسابك', title_en: 'Fund your account' },
-    { title_ar: 'تواصل معي بعد التسجيل للانضمام لقناة السكالب', title_en: 'Contact me after registration to join the scalp channel' },
-  ]
-  const items = steps.length > 0 ? steps : fallback
+  const items = steps.filter((step) => (
+    textValue(step, isArabic, 'title_ar', 'title_en') ||
+    textValue(step, isArabic, 'description_ar', 'description_en')
+  ))
+
+  if (items.length === 0) {
+    return null
+  }
 
   return (
     <div className="space-y-4">
@@ -240,92 +274,122 @@ function ScalpSteps({ steps, isArabic }) {
 function ScalpDetailsLayout({ service, content, isArabic }) {
   const features = Array.isArray(service.features) ? service.features : []
   const steps = Array.isArray(service.steps) ? service.steps : []
+  const faqs = Array.isArray(service.faqs) ? service.faqs : []
   const gallery = Array.isArray(service.media) ? service.media.filter((item) => item.media_url) : []
-  const importantLinks = Array.isArray(service.important_links) ? service.important_links.filter((item) => item.url) : []
-  const hasMainMedia = Boolean(service.cover_url || service.card_media_url || service.thumbnail_url)
-  const hasExtraExplanation = hasMainMedia || gallery.length > 0 || Boolean(content.termsContent)
+  const importantLinks = Array.isArray(service.important_links) ? service.important_links : []
+  const hasFeatures = features.some((feature) => textValue(feature, isArabic, 'label_ar', 'label_en'))
+  const hasSteps = steps.some((step) => (
+    textValue(step, isArabic, 'title_ar', 'title_en') ||
+    textValue(step, isArabic, 'description_ar', 'description_en')
+  ))
+  const hasPlatformLinks = visibleLinks(importantLinks).length > 0 || Boolean(service.referral_url)
+  const hasMainMedia = Boolean(service.cover_url || service.card_media_url || service.thumbnail_url || service.cover_video_poster_url || service.card_video_poster_url)
 
   return (
     <div className="min-h-screen bg-hunter-bg text-hunter-text" dir={isArabic ? 'rtl' : 'ltr'}>
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 sm:py-8 lg:px-8">
         <Link to="/" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-hunter-text-muted hover:text-hunter-green">
           <ArrowLeft className="h-4 w-4 rtl:rotate-180" />
           {isArabic ? 'العودة للرئيسية' : 'Back to home'}
         </Link>
 
-        <section className="mt-12 grid gap-10 lg:grid-cols-[0.95fr_1.05fr] lg:items-center">
-          <div className="order-2 lg:order-1">
-            <h2 className="text-center font-heading text-2xl font-bold sm:text-3xl">{isArabic ? 'كيف تبدأ' : 'How to start'}</h2>
-            <div className="mt-6">
-              <ScalpSteps steps={steps} isArabic={isArabic} />
+        <section className="mx-auto mt-8 max-w-4xl text-center sm:mt-10">
+          {content.title ? (
+            <h1 className="font-heading text-3xl font-bold leading-tight sm:text-5xl">
+              {content.title}
+            </h1>
+          ) : null}
+          {content.subtitle || content.description ? (
+            <p className="mx-auto mt-4 max-w-3xl text-base leading-8 text-hunter-text-muted sm:text-lg sm:leading-9">
+              {content.subtitle || content.description}
+            </p>
+          ) : null}
+        </section>
+
+        {hasMainMedia ? (
+          <section className="mx-auto mt-7 max-w-4xl overflow-hidden rounded-3xl border border-white/10 bg-hunter-card shadow-2xl shadow-black/20 sm:mt-8">
+            <div className="aspect-video min-h-[190px] bg-black/20 sm:min-h-[280px]">
+              <ServiceMediaViewer service={service} title={content.title} fit="contain" />
             </div>
+          </section>
+        ) : null}
+
+        <section className={`mx-auto mt-7 grid max-w-5xl gap-5 ${hasSteps ? 'lg:grid-cols-[1.05fr_0.95fr]' : ''}`}>
+          <div className="rounded-[2rem] border border-white/10 bg-hunter-card p-5 sm:p-7">
+            <h2 className="font-heading text-2xl font-bold">{isArabic ? 'الشرح والتفاصيل' : 'Explanation and details'}</h2>
+            {content.description ? (
+              <p className="mt-4 whitespace-pre-wrap leading-8 text-hunter-text-muted">{content.description}</p>
+            ) : null}
+
+            {hasFeatures ? (
+            <div className="mt-6">
+              <ScalpFeatureGrid features={features} isArabic={isArabic} />
+            </div>
+            ) : null}
+
             {content.riskWarning ? (
-              <div className="mt-4 flex items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-4 text-sm text-hunter-text-muted">
-                <ShieldAlert className="h-5 w-5 shrink-0 text-fuchsia-500" />
+              <div className="mt-5 flex items-start gap-3 rounded-2xl border border-fuchsia-500/20 bg-fuchsia-500/10 p-4 text-sm leading-7 text-hunter-text-muted">
+                <ShieldAlert className="mt-1 h-5 w-5 shrink-0 text-fuchsia-400" />
                 <span>{content.riskWarning}</span>
               </div>
             ) : null}
           </div>
 
-          <div className="order-1 lg:order-2">
-            <div className={`mx-auto max-w-2xl text-center ${isArabic ? 'lg:text-right' : 'lg:text-left'}`}>
-              <div className="mb-4 inline-flex rounded-full border border-fuchsia-500/20 bg-fuchsia-500/10 px-4 py-1 text-sm font-semibold text-fuchsia-300">
-                {isArabic ? 'سكالب' : 'Scalp'}
-              </div>
-              <h1 className="font-heading text-4xl font-bold sm:text-5xl">{content.title || (isArabic ? 'سكالب' : 'Scalp')}</h1>
-              {content.subtitle || content.description ? (
-                <p className="mt-5 text-lg leading-9 text-hunter-text-muted">
-                  {content.subtitle || content.description}
-                </p>
-              ) : null}
-            </div>
-
-            <div className="mt-8">
-              <ScalpFeatureGrid features={features} isArabic={isArabic} />
-            </div>
-
-            <div className="mx-auto mt-8 max-w-xl">
-              <ScalpPlatformButtons links={importantLinks} isArabic={isArabic} id="platform-links" />
+          {hasSteps ? (
+          <div className="rounded-[2rem] border border-white/10 bg-hunter-card p-5 sm:p-7">
+            <h2 className="font-heading text-2xl font-bold">{isArabic ? 'خطوات البدء' : 'How to start'}</h2>
+            <div className="mt-5">
+              <ScalpSteps steps={steps} isArabic={isArabic} />
             </div>
           </div>
+          ) : null}
         </section>
 
-        {hasMainMedia ? (
-          <section className="mt-12 overflow-hidden rounded-[2rem] border border-white/10 bg-hunter-card shadow-2xl shadow-black/20">
-            <div className="aspect-video min-h-[260px]">
-              <ServiceMediaViewer service={service} title={content.title} />
-            </div>
-          </section>
-        ) : null}
-
         {content.termsContent ? (
-          <section className="mt-8 rounded-[2rem] border border-white/10 bg-hunter-card p-6 sm:p-8">
+          <section className="mx-auto mt-7 max-w-5xl rounded-[2rem] border border-white/10 bg-hunter-card p-5 sm:p-7">
             <h2 className="font-heading text-2xl font-bold">{content.termsTitle || (isArabic ? 'الشروط والتنبيهات' : 'Terms and notes')}</h2>
             <p className="mt-4 whitespace-pre-wrap leading-8 text-hunter-text-muted">{content.termsContent}</p>
           </section>
         ) : null}
 
         {gallery.length > 0 ? (
-          <section className="mt-8 rounded-[2rem] border border-white/10 bg-hunter-card p-6 sm:p-8">
-            <h2 className="font-heading text-2xl font-bold">{isArabic ? 'شرح إضافي' : 'Extra explanation'}</h2>
-            <div className="mt-5 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-              {gallery.map((item) => <GalleryItem key={item.id || item.media_url} item={item} title={content.title} />)}
+          <section className="mx-auto mt-7 max-w-5xl rounded-[2rem] border border-white/10 bg-hunter-card p-5 sm:p-7">
+            <h2 className="font-heading text-2xl font-bold">{isArabic ? 'معرض الوسائط' : 'Media gallery'}</h2>
+            <div className="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {gallery.map((item) => (
+                <GalleryItem key={item.id || item.media_url} item={item} title={textValue(item, isArabic, 'alt_text_ar', 'alt_text_en') || content.title} />
+              ))}
             </div>
           </section>
         ) : null}
 
-        {hasExtraExplanation ? (
-          <section className="mt-8 rounded-[2rem] border border-white/10 bg-hunter-card p-6 text-center sm:p-8">
-          <h2 className="font-heading text-2xl font-bold">{isArabic ? 'اختار المنصة المناسبة' : 'Choose your platform'}</h2>
-          <p className="mx-auto mt-3 max-w-2xl text-hunter-text-muted">
-            {isArabic
-              ? 'السكالب لا يتم دفعه من الموقع. اقرأ الشرح ثم افتح حسابك من رابط الريفيرال المناسب.'
-              : 'Scalp is not paid through the website. Review the explanation, then open your account from the right referral link.'}
-          </p>
-            <div className="mx-auto mt-6 max-w-xl">
-              <ScalpPlatformButtons links={importantLinks} isArabic={isArabic} />
+        {faqs.length > 0 ? (
+          <section className="mx-auto mt-7 max-w-5xl rounded-[2rem] border border-white/10 bg-hunter-card p-5 sm:p-7">
+            <h2 className="font-heading text-2xl font-bold">{isArabic ? 'الأسئلة الشائعة' : 'FAQs'}</h2>
+            <div className="mt-5 space-y-3">
+              {faqs.map((faq) => (
+                <details key={faq.id || faq.question_en || faq.question_ar} className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <summary className="cursor-pointer font-semibold leading-7">
+                    {textValue(faq, isArabic, 'question_ar', 'question_en')}
+                  </summary>
+                  {textValue(faq, isArabic, 'answer_ar', 'answer_en') ? (
+                    <p className="mt-3 whitespace-pre-wrap leading-7 text-hunter-text-muted">
+                      {textValue(faq, isArabic, 'answer_ar', 'answer_en')}
+                    </p>
+                  ) : null}
+                </details>
+              ))}
             </div>
           </section>
+        ) : null}
+
+        {hasPlatformLinks ? (
+        <section id="platform-links" className="mx-auto mt-7 max-w-5xl rounded-[2rem] border border-fuchsia-500/20 bg-gradient-to-br from-fuchsia-500/10 via-hunter-card to-blue-500/10 p-5 text-center sm:p-7">
+          <h2 className="font-heading text-2xl font-bold">{isArabic ? 'افتح الحساب أو انضم للمتابعة' : 'Open account or join follow-up'}</h2>
+          <div className="mx-auto mt-6 max-w-2xl">
+            <ScalpActionButtons links={importantLinks} service={service} isArabic={isArabic} />
+          </div>
+        </section>
         ) : null}
       </main>
     </div>
@@ -381,7 +445,7 @@ export default function ServiceDetailsPage() {
   const steps = Array.isArray(service.steps) ? service.steps : []
   const faqs = Array.isArray(service.faqs) ? service.faqs : []
   const gallery = Array.isArray(service.media) ? service.media.filter((item) => item.media_url) : []
-  const importantLinks = Array.isArray(service.important_links) ? service.important_links.filter((item) => item.url) : []
+  const importantLinks = Array.isArray(service.important_links) ? visibleLinks(service.important_links) : []
   const orderedImportantLinks = sortedLinks(importantLinks)
 
   return (

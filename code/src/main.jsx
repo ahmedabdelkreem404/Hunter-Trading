@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom/client'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import App from './App'
 import LanguageDirectionSync from './components/ui/LanguageDirectionSync'
+import PublicPageLayout from './components/layout/PublicPageLayout'
 import './i18n'
 import './index.css'
 
@@ -21,6 +22,10 @@ function RouteLoader() {
   )
 }
 
+function PublicPage({ children }) {
+  return <PublicPageLayout>{children}</PublicPageLayout>
+}
+
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <LanguageDirectionSync />
@@ -28,18 +33,18 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Suspense fallback={<RouteLoader />}>
         <Routes>
           {/* Main website routes */}
-          <Route path="/privacy-policy" element={<LegalPage />} />
-          <Route path="/terms-and-conditions" element={<LegalPage />} />
-          <Route path="/risk-disclaimer" element={<LegalPage />} />
-          <Route path="/checkout/:slug" element={<CheckoutPage />} />
-          <Route path="/affiliate" element={<ServiceDetailsPage />} />
-          <Route path="/services/:slug" element={<ServiceDetailsPage />} />
-          <Route path="/funded/:slug" element={<ServiceDetailsPage />} />
-          <Route path="/vip/:slug" element={<ServiceDetailsPage />} />
-          <Route path="/scalp/:slug" element={<ServiceDetailsPage />} />
-          <Route path="/courses/:slug" element={<ServiceDetailsPage />} />
-          <Route path="/offers" element={<BlogPage />} />
-          <Route path="/offers/:slug" element={<ServiceDetailsPage />} />
+          <Route path="/privacy-policy" element={<PublicPage><LegalPage /></PublicPage>} />
+          <Route path="/terms-and-conditions" element={<PublicPage><LegalPage /></PublicPage>} />
+          <Route path="/risk-disclaimer" element={<PublicPage><LegalPage /></PublicPage>} />
+          <Route path="/checkout/:slug" element={<PublicPage><CheckoutPage /></PublicPage>} />
+          <Route path="/affiliate" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
+          <Route path="/services/:slug" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
+          <Route path="/funded/:slug" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
+          <Route path="/vip/:slug" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
+          <Route path="/scalp/:slug" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
+          <Route path="/courses/:slug" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
+          <Route path="/offers" element={<PublicPage><BlogPage /></PublicPage>} />
+          <Route path="/offers/:slug" element={<PublicPage><ServiceDetailsPage /></PublicPage>} />
           <Route path="/*" element={<App />} />
 
           {/* Admin routes */}

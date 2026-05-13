@@ -1,4 +1,4 @@
-# Allow access to uploaded files
+﻿# Allow access to uploaded files
 <FilesMatch "\.(?i:jpg|jpeg|png|gif|webp|mp4|webm|mov)$">
     Order Allow,Deny
     Allow from all
