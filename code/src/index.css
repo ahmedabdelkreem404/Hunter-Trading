@@ -647,11 +647,28 @@ html[lang="ar"] .service-card-title {
   line-height: 1.1;
 }
 
+.service-card-compare-price {
+  font-size: clamp(0.58rem, 5.4cqw, 0.74rem);
+  line-height: 1.2;
+}
+
+.service-card-description {
+  font-size: clamp(0.6rem, 5.4cqw, 0.76rem);
+  line-height: 1.45;
+  color: var(--product-card-body-color, var(--text-secondary));
+}
+
 .service-card-feature {
   font-size: clamp(0.58rem, 5.3cqw, 0.72rem);
   line-height: 1.45;
   color: var(--product-card-body-color, var(--text-secondary));
   border-color: color-mix(in srgb, var(--product-card-border-color, rgba(255, 255, 255, 0.12)) 75%, transparent);
+}
+
+.service-card-meta,
+.service-card-secondary-link {
+  font-size: clamp(0.55rem, 5cqw, 0.7rem);
+  line-height: 1.35;
 }
 
 .service-card-cta {

@@ -45,6 +45,13 @@ function uniqueMediaCandidates(candidates = []) {
 
 function CheckoutMedia({ product, title }) {
   const posterUrl = getSafePosterUrl(product.cover_video_poster_url, product.card_video_poster_url, product.thumbnail_url)
+  const galleryCandidates = Array.isArray(product.media)
+    ? product.media.map((item) => ({
+        src: item.media_url,
+        type: item.media_type || 'image',
+        poster: posterUrl,
+      }))
+    : []
   const candidates = uniqueMediaCandidates([
     {
       src: product.cover_url,
@@ -61,6 +68,7 @@ function CheckoutMedia({ product, title }) {
       type: 'image',
       poster: '',
     },
+    ...galleryCandidates,
     {
       src: posterUrl,
       type: 'image',
@@ -326,6 +334,8 @@ export default function CheckoutPage() {
                 </CheckoutInfoBlock>
               ) : null}
 
+              <CheckoutGallery items={gallery} title={isArabic ? 'معرض المنتج' : 'Product media'} />
+
               {steps.length > 0 ? (
                 <CheckoutInfoBlock title={isArabic ? 'خطوات التنفيذ' : 'Steps'}>
                   <div className="space-y-3">
@@ -357,8 +367,6 @@ export default function CheckoutPage() {
               ) : null}
 
               <CheckoutImportantLinks links={importantLinks} isArabic={isArabic} />
-
-              <CheckoutGallery items={gallery} title={isArabic ? 'معرض المنتج' : 'Product media'} />
 
               {faqs.length > 0 ? (
                 <CheckoutInfoBlock title={isArabic ? 'الأسئلة الشائعة' : 'FAQs'}>

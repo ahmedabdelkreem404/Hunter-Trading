@@ -48,6 +48,49 @@ function getFeatures(service, isArabic) {
   return String(text).split(/\r?\n|•|-/).map((item) => item.trim()).filter(Boolean)
 }
 
+function hasText(value) {
+  return String(value || '').trim().length > 0
+}
+
+function localizedValue(item = {}, isArabic, arKey, enKey) {
+  return isArabic ? item[arKey] || item[enKey] : item[enKey] || item[arKey]
+}
+
+function sortByOrder(list = []) {
+  return [...list].sort((a, b) => Number(a.sort_order || 0) - Number(b.sort_order || 0))
+}
+
+function getVisibleImportantLinks(product = {}, isArabic) {
+  if (!Array.isArray(product.important_links)) return []
+
+  return sortByOrder(product.important_links)
+    .filter((link) => link && link.is_visible !== false && hasText(link.url))
+    .map((link) => ({
+      ...link,
+      label: localizedValue(link, isArabic, 'label_ar', 'label_en') || link.url,
+    }))
+    .filter((link) => hasText(link.label))
+}
+
+function getCardDetailItems(product = {}, isArabic) {
+  const steps = Array.isArray(product.steps) ? sortByOrder(product.steps) : []
+  const faqs = Array.isArray(product.faqs) ? sortByOrder(product.faqs) : []
+  const mediaItems = Array.isArray(product.media) ? product.media.filter((item) => hasText(item.media_url)) : []
+  const brokerName = product.broker_name
+  const termsTitle = localizedValue(product, isArabic, 'terms_title_ar', 'terms_title_en')
+  const firstStep = steps.map((step) => localizedValue(step, isArabic, 'title_ar', 'title_en')).find(hasText)
+  const firstFaq = faqs.map((faq) => localizedValue(faq, isArabic, 'question_ar', 'question_en')).find(hasText)
+  const items = [
+    brokerName,
+    firstStep,
+    termsTitle,
+    firstFaq,
+    mediaItems.length ? (isArabic ? `${mediaItems.length} وسائط` : `${mediaItems.length} media`) : '',
+  ]
+
+  return items.map((item) => String(item || '').trim()).filter(Boolean)
+}
+
 function formatTimeLeft(targetDate, isArabic, compact = false) {
   const diff = new Date(targetDate).getTime() - Date.now()
   if (Number.isNaN(diff) || diff <= 0) {
@@ -104,10 +147,13 @@ function asBool(value, fallback = false) {
 
 function ProductCardMedia({ product, title, compact = false }) {
   const explicitMediaUrl = product.card_media_url || ''
-  const fallbackImageUrl = product.thumbnail_url || product.cover_url || ''
+  const galleryMediaUrl = Array.isArray(product.media)
+    ? product.media.find((item) => hasText(item.media_url))?.media_url || ''
+    : ''
+  const fallbackImageUrl = product.thumbnail_url || product.cover_url || galleryMediaUrl || ''
   const mediaUrl = explicitMediaUrl || fallbackImageUrl
   const mediaType = resolveMediaType(mediaUrl, explicitMediaUrl ? product.card_media_type || 'image' : product.cover_media_type || product.card_media_type || 'image')
-  const posterUrl = getSafePosterUrl(product.card_video_poster_url, product.thumbnail_url, product.cover_video_poster_url)
+  const posterUrl = getSafePosterUrl(product.card_video_poster_url, product.thumbnail_url, product.cover_video_poster_url, galleryMediaUrl)
   const mediaClassName = 'aspect-[4/3] w-full object-cover transition duration-500 group-hover:scale-[1.02] sm:aspect-[16/10]'
 
   if (mediaUrl) {
@@ -185,6 +231,34 @@ function CardAction({ action, children, className, style }) {
   )
 }
 
+function CardSecondaryLink({ link, isArabic }) {
+  const href = normalizeSectionUrl(link.url)
+  if (!href) return null
+
+  const external = /^(https?:|mailto:|tel:|sms:|whatsapp:|tg:)/i.test(href)
+  const content = (
+    <>
+      <span className="min-w-0 truncate">{link.label}</span>
+      <ArrowRight className={`h-[1em] w-[1em] shrink-0 ${isArabic ? 'rotate-180' : ''}`} />
+    </>
+  )
+  const className = "service-card-secondary-link inline-flex min-w-0 items-center justify-center gap-[0.4em] rounded-lg border border-white/10 bg-white/[0.045] px-[0.75em] py-[0.55em] font-semibold text-hunter-text-muted transition hover:border-[color:var(--product-accent)] hover:text-hunter-text sm:rounded-xl"
+
+  if (external) {
+    return (
+      <a href={href} target={link.new_tab === false ? undefined : '_blank'} rel={link.new_tab === false ? undefined : 'noreferrer'} className={className}>
+        {content}
+      </a>
+    )
+  }
+
+  return (
+    <a href={href} className={className}>
+      {content}
+    </a>
+  )
+}
+
 function normalizeSectionUrl(url = '') {
   const trimmed = String(url || '').trim()
   if (!trimmed) return ''
@@ -197,7 +271,11 @@ function SectionCta({ href, children, isArabic }) {
   if (!normalizedHref || !children) return null
 
   const isExternal = /^(https?:|mailto:|tel:|sms:|whatsapp:|tg:)/i.test(normalizedHref)
-  const className = "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl border border-white/10 bg-white/8 px-5 py-3 text-sm font-bold text-hunter-text shadow-lg shadow-black/10 transition hover:-translate-y-0.5 hover:border-[color:var(--product-accent)] hover:bg-white/12 sm:px-6 sm:text-base"
+  const className = "inline-flex min-h-12 items-center justify-center gap-2 rounded-2xl px-5 py-3 text-sm font-bold text-hunter-bg shadow-lg transition hover:-translate-y-0.5 sm:px-6 sm:text-base"
+  const style = {
+    background: 'linear-gradient(180deg, var(--product-accent) 0%, var(--product-accent-strong) 100%)',
+    boxShadow: '0 14px 34px color-mix(in srgb, var(--product-accent) 18%, transparent)',
+  }
   const content = (
     <>
       <span>{children}</span>
@@ -207,14 +285,14 @@ function SectionCta({ href, children, isArabic }) {
 
   if (isExternal) {
     return (
-      <a href={normalizedHref} target="_blank" rel="noreferrer" className={className}>
+      <a href={normalizedHref} target="_blank" rel="noreferrer" className={className} style={style}>
         {content}
       </a>
     )
   }
 
   return (
-    <a href={normalizedHref} className={className}>
+    <a href={normalizedHref} className={className} style={style}>
       {content}
     </a>
   )
@@ -283,6 +361,7 @@ export default function PremiumProductSection({
   const resolvedSectionCtaLabel = (isArabic ? section.cta_label_ar || section.cta_label_en : section.cta_label_en || section.cta_label_ar) || ''
   const resolvedSectionCtaUrl = section.cta_url || ''
   const resolvedBadgeLabel = badgeLabel || resolvedTitle
+  const hasSectionExtraContent = Boolean(resolvedBody || (resolvedSectionCtaLabel && resolvedSectionCtaUrl))
 
   const visibleProducts = useMemo(() => {
     if (!showExpandToggle || showAll) return products
@@ -320,7 +399,7 @@ export default function PremiumProductSection({
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
           transition={{ duration: 0.5 }}
-          className="mx-auto mb-8 max-w-3xl text-center sm:mb-10 md:mb-12"
+          className={`mx-auto max-w-3xl text-center ${hasSectionExtraContent ? 'mb-5 sm:mb-6' : 'mb-8 sm:mb-10 md:mb-12'}`}
         >
           {resolvedBadgeLabel ? (
             <div className="mb-4 flex justify-center">
@@ -329,19 +408,28 @@ export default function PremiumProductSection({
           ) : null}
           {resolvedTitle ? <h2 className="section-title">{resolvedTitle}</h2> : null}
           {resolvedSubtitle ? <p className="section-subtitle">{resolvedSubtitle}</p> : null}
-          {resolvedBody ? (
-            <p className="mx-auto mt-4 max-w-3xl whitespace-pre-line text-sm leading-8 text-hunter-text-muted sm:text-base sm:leading-9">
-              {resolvedBody}
-            </p>
-          ) : null}
-          {resolvedSectionCtaLabel && resolvedSectionCtaUrl ? (
-            <div className="mt-6 flex justify-center">
+        </motion.div>
+
+        {hasSectionExtraContent ? (
+          <motion.div
+            initial={{ opacity: 0, y: 18 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.45, delay: 0.05 }}
+            className="mx-auto mb-8 flex max-w-3xl flex-col items-center gap-4 rounded-3xl border border-white/10 bg-white/[0.035] p-4 text-center shadow-[0_18px_50px_rgba(0,0,0,0.14)] backdrop-blur-sm sm:mb-10 sm:p-5 md:mb-12"
+          >
+            {resolvedBody ? (
+              <p className="max-w-2xl whitespace-pre-line text-sm leading-8 text-hunter-text-muted sm:text-base sm:leading-9">
+                {resolvedBody}
+              </p>
+            ) : null}
+            {resolvedSectionCtaLabel && resolvedSectionCtaUrl ? (
               <SectionCta href={resolvedSectionCtaUrl} isArabic={isArabic}>
                 {resolvedSectionCtaLabel}
               </SectionCta>
-            </div>
-          ) : null}
-        </motion.div>
+            ) : null}
+          </motion.div>
+        ) : null}
 
         {products.length > 0 ? (
           <>
@@ -359,8 +447,13 @@ export default function PremiumProductSection({
                 const compactScalp = isScalp
                 const ctaLabel = getCardCtaLabel(product, isScalp, isArabic)
                 const visibleFeatures = features.slice(0, compactScalp ? 2 : 3)
+                const detailItems = getCardDetailItems(product, isArabic).slice(0, 3)
+                const secondaryLinks = isScalp ? [] : getVisibleImportantLinks(product, isArabic).slice(0, 2)
                 const singleCard = visibleProducts.length === 1
                 const showMobileRibbon = Boolean(ribbonText && !isOffers)
+                const comparePrice = Number(product.compare_price || 0)
+                const currentPrice = Number(product.price || 0)
+                const showComparePrice = comparePrice > 0 && comparePrice > currentPrice
 
                 return (
                   <motion.article
@@ -424,7 +517,7 @@ export default function PremiumProductSection({
                       <div className={centerCardContent ? 'text-center' : 'text-center sm:text-start'}>
                         <h3 className="service-card-title break-words font-heading font-bold sm:text-2xl">{productTitle}</h3>
                         {productDescription ? (
-                          <p className="mx-auto mt-3 hidden max-w-md text-sm leading-7 text-hunter-text-muted sm:line-clamp-2 sm:block sm:min-h-[3.5rem] sm:mx-0">
+                          <p className="service-card-description mx-auto mt-[5%] line-clamp-2 max-w-md whitespace-pre-line text-hunter-text-muted sm:mt-3 sm:min-h-[3.4rem] sm:mx-0">
                             {productDescription}
                           </p>
                         ) : null}
@@ -433,8 +526,15 @@ export default function PremiumProductSection({
                             {ribbonText}
                           </div>
                         ) : (
-                          <div className="service-card-price mt-[6%] font-heading font-bold sm:mt-3 sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
-                            {formatMoney(product.price, product.currency)}
+                          <div className="mt-[6%] sm:mt-3">
+                            {showComparePrice ? (
+                              <div className="service-card-compare-price font-semibold text-hunter-text-muted line-through">
+                                {formatMoney(product.compare_price, product.currency)}
+                              </div>
+                            ) : null}
+                            <div className="service-card-price font-heading font-bold sm:text-4xl" style={{ color: 'var(--product-accent)' }}>
+                              {formatMoney(product.price, product.currency)}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -444,11 +544,32 @@ export default function PremiumProductSection({
                           {visibleFeatures.map((feature, featureIndex) => (
                             <div
                               key={`${product.id}-feature-${featureIndex}`}
-                              className={`service-card-feature ${featureIndex > 0 ? 'hidden sm:flex' : 'flex'} items-start gap-[0.45em] rounded-lg border border-white/10 bg-white/[0.03] px-[0.75em] py-[0.55em] text-hunter-text-muted sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm sm:leading-6 ${centerCardContent ? 'justify-center text-center' : ''}`}
+                              className={`service-card-feature ${featureIndex > 1 ? 'hidden sm:flex' : 'flex'} items-start gap-[0.45em] rounded-lg border border-white/10 bg-white/[0.03] px-[0.75em] py-[0.55em] text-hunter-text-muted sm:gap-2 sm:rounded-xl sm:px-3 sm:py-2 sm:text-sm sm:leading-6 ${centerCardContent ? 'justify-center text-center' : ''}`}
                             >
                               <CheckCircle2 className="mt-[0.2em] h-[1.05em] w-[1.05em] shrink-0 sm:h-4 sm:w-4" style={{ color: 'var(--product-accent)' }} />
                               <span className="line-clamp-2">{feature}</span>
                             </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {detailItems.length > 0 ? (
+                        <div className={`mt-[7%] grid gap-[0.45em] sm:mt-4 sm:gap-2 ${centerCardContent ? 'mx-auto max-w-md' : ''}`}>
+                          {detailItems.map((item, itemIndex) => (
+                            <div
+                              key={`${product.id}-detail-${itemIndex}`}
+                              className="service-card-meta flex min-w-0 items-center justify-center rounded-lg border border-white/10 bg-white/[0.025] px-[0.75em] py-[0.5em] text-center font-semibold text-hunter-text-muted sm:rounded-xl"
+                            >
+                              <span className="line-clamp-1">{item}</span>
+                            </div>
+                          ))}
+                        </div>
+                      ) : null}
+
+                      {secondaryLinks.length > 0 ? (
+                        <div className="mt-[7%] grid min-w-0 gap-[0.45em] sm:mt-4 sm:gap-2">
+                          {secondaryLinks.map((link, linkIndex) => (
+                            <CardSecondaryLink key={`${product.id}-link-${linkIndex}-${link.url}`} link={link} isArabic={isArabic} />
                           ))}
                         </div>
                       ) : null}
