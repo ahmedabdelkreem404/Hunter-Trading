@@ -140,6 +140,7 @@ const defaultCoach = {
 
 const defaultSettings = {
   website_name: '',
+  default_language: 'ar',
   support_email: '',
   telegram_url: '',
   whatsapp_url: '',

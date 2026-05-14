@@ -10,7 +10,13 @@ import { resolveMediaType } from '../utils/media'
 export default function OffersPage() {
   const { i18n } = useTranslation()
   const isArabic = i18n.language === 'ar'
-  const { data: offers } = useApiData(() => servicesAPI.getAll('offers'), [], (response) => response.data ?? [])
+  const { data: offers } = useApiData(
+    () => servicesAPI.getAll('offers'),
+    [],
+    (response) => response.data ?? [],
+    [],
+    { peek: () => servicesAPI.peekAll('offers') }
+  )
   const { data: settings } = useApiData(settingsAPI.getPublic, {}, (response) => response.data ?? {})
   const { data: sections } = useApiData(sectionSettingsAPI.getPublic, [], (response) => response.data ?? [])
   const websiteName = settings.general?.website_name?.value || ''

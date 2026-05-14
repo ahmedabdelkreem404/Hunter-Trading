@@ -33,6 +33,16 @@ function visibleLinks(links = []) {
   return sortedLinks(links).filter((link) => link && link.is_visible !== false && hasText(link.url))
 }
 
+function uniqueGalleryItems(items = []) {
+  const seen = new Set()
+  return items.filter((item) => {
+    const url = String(item?.media_url || '').trim()
+    if (!url || seen.has(url)) return false
+    seen.add(url)
+    return true
+  })
+}
+
 function uniqueMediaCandidates(candidates = []) {
   const seen = new Set()
   return candidates.filter((candidate) => {
@@ -88,8 +98,8 @@ function CheckoutMedia({ product, title }) {
         type={resolveMediaType(candidate.src, candidate.type)}
         alt={title}
         poster={candidate.poster}
-        className="mb-6 aspect-video w-full rounded-2xl object-cover"
-        iframeClassName="mb-6 aspect-video w-full rounded-2xl"
+        className="mb-6 aspect-[16/9] w-full rounded-[1.5rem] border border-white/10 bg-black/20 object-contain p-2"
+        iframeClassName="mb-6 aspect-[16/9] w-full rounded-[1.5rem] border border-white/10 bg-black/20"
         autoPlay
         muted
         loop
@@ -102,31 +112,96 @@ function CheckoutMedia({ product, title }) {
   return renderCandidate()
 }
 
+function buildCheckoutGalleryItems(product) {
+  if (!product) return []
+
+  const posterUrl = getSafePosterUrl(product.cover_video_poster_url, product.card_video_poster_url, product.thumbnail_url)
+  const items = []
+  const pushItem = (item, source, index = 0) => {
+    const mediaUrl = String(item?.media_url || item?.src || '').trim()
+    if (!mediaUrl) return
+
+    items.push({
+      id: item.id || `${source}-${index}`,
+      media_url: mediaUrl,
+      media_type: resolveMediaType(mediaUrl, item.media_type || item.type || 'image'),
+      alt_text_en: item.alt_text_en || item.alt || product.title_en || '',
+      alt_text_ar: item.alt_text_ar || item.alt || product.title_ar || '',
+      sort_order: Number(item.sort_order ?? index),
+      poster_url: item.poster_url || posterUrl,
+      source,
+    })
+  }
+
+  if (Array.isArray(product.media)) {
+    product.media.forEach((item, index) => pushItem(item, 'gallery', index))
+  }
+
+  pushItem(
+    {
+      media_url: product.cover_url,
+      media_type: product.cover_media_type || 'image',
+      poster_url: getSafePosterUrl(product.cover_video_poster_url, product.card_video_poster_url, product.thumbnail_url),
+      alt_text_en: product.title_en,
+      alt_text_ar: product.title_ar,
+      sort_order: 1000,
+    },
+    'cover',
+  )
+  pushItem(
+    {
+      media_url: product.card_media_url,
+      media_type: product.card_media_type || 'image',
+      poster_url: getSafePosterUrl(product.card_video_poster_url, product.cover_video_poster_url, product.thumbnail_url),
+      alt_text_en: product.title_en,
+      alt_text_ar: product.title_ar,
+      sort_order: 1001,
+    },
+    'card',
+  )
+  pushItem(
+    {
+      media_url: product.thumbnail_url,
+      media_type: 'image',
+      alt_text_en: product.title_en,
+      alt_text_ar: product.title_ar,
+      sort_order: 1002,
+    },
+    'thumbnail',
+  )
+
+  return items.sort((a, b) => a.sort_order - b.sort_order)
+}
+
 function CheckoutInfoBlock({ title, children }) {
   if (!children) return null
 
   return (
-    <section className="rounded-2xl border border-white/10 bg-white/[0.04] p-4 sm:p-5">
-      <h2 className="font-heading text-xl font-bold text-hunter-text">{title}</h2>
+    <section className="rounded-3xl border border-white/10 bg-white/[0.035] p-4 shadow-[0_16px_42px_rgba(0,0,0,0.16)] transition hover:border-white/15 sm:p-5">
+      <div className="flex items-center justify-between gap-3 border-b border-white/10 pb-3">
+        <h2 className="font-heading text-lg font-bold leading-tight text-hunter-text sm:text-xl">{title}</h2>
+      </div>
       <div className="mt-4">{children}</div>
     </section>
   )
 }
 
-function CheckoutGallery({ items, title }) {
-  if (!items.length) return null
+function CheckoutGallery({ items, title, isArabic }) {
+  const uniqueItems = uniqueGalleryItems(items)
+  if (!uniqueItems.length) return null
 
   return (
     <CheckoutInfoBlock title={title}>
-      <div className="grid gap-3 sm:grid-cols-2">
-        {items.map((item) => (
+      <div className={`grid gap-3 ${uniqueItems.length === 1 ? 'mx-auto max-w-sm' : 'grid-cols-2 xl:grid-cols-3'}`}>
+        {uniqueItems.map((item) => (
           <SmartMedia
             key={item.id || item.media_url}
             src={item.media_url}
             type={resolveMediaType(item.media_url, item.media_type || 'image')}
-            alt={title}
-            className="aspect-video w-full rounded-xl object-cover"
-            iframeClassName="aspect-video w-full rounded-xl"
+            alt={textValue(item, isArabic, 'alt_text_ar', 'alt_text_en') || title}
+            poster={item.poster_url}
+            className="aspect-[4/3] w-full rounded-2xl border border-white/10 bg-black/20 object-contain p-2"
+            iframeClassName="aspect-[4/3] w-full rounded-2xl border border-white/10 bg-black/20"
             autoPlay
             muted
             loop
@@ -171,7 +246,13 @@ export default function CheckoutPage() {
   const { slug } = useParams()
   const { i18n } = useTranslation()
   const isArabic = i18n.language === 'ar'
-  const { data: product } = useApiData(() => servicesAPI.getBySlug(slug), null, selectProduct, [slug])
+  const { data: product } = useApiData(
+    () => servicesAPI.getBySlug(slug),
+    null,
+    selectProduct,
+    [slug],
+    { peek: () => servicesAPI.peekBySlug(slug) }
+  )
   const { data: settings } = useApiData(settingsAPI.getPublic, {}, (response) => response.data ?? {})
   const [form, setForm] = useState({
     customer_name: '',
@@ -224,9 +305,7 @@ export default function CheckoutPage() {
   const faqs = Array.isArray(product?.faqs)
     ? product.faqs.filter((faq) => hasText(textValue(faq, isArabic, 'question_ar', 'question_en')))
     : []
-  const gallery = Array.isArray(product?.media)
-    ? product.media.filter((item) => hasText(item.media_url))
-    : []
+  const gallery = buildCheckoutGalleryItems(product)
   const termsTitle = product ? textValue(product, isArabic, 'terms_title_ar', 'terms_title_en') : ''
   const termsContent = product ? textValue(product, isArabic, 'terms_content_ar', 'terms_content_en') : ''
   const riskWarning = product ? textValue(product, isArabic, 'risk_warning_ar', 'risk_warning_en') : ''
@@ -299,33 +378,38 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen overflow-x-hidden bg-hunter-bg text-hunter-text" dir={isArabic ? 'rtl' : 'ltr'}>
-      <div className="mx-auto w-full max-w-6xl px-3 py-10 sm:px-6 lg:px-8">
-        <Link to="/" className="inline-flex items-center gap-2 rounded-xl border border-white/10 px-4 py-2 text-sm text-hunter-text-muted hover:text-hunter-green">
+      <div className="pointer-events-none fixed inset-0 bg-[radial-gradient(circle_at_top,rgba(186,36,255,0.08),transparent_32%),linear-gradient(180deg,rgba(255,255,255,0.02),transparent_18%)]" />
+      <div className="relative mx-auto w-full max-w-7xl px-4 py-8 sm:px-6 lg:px-8 lg:py-12">
+        <div className="mb-6 flex justify-start">
+        <Link to="/" className="inline-flex items-center gap-2 rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-2.5 text-sm font-semibold text-hunter-text-muted transition hover:border-hunter-green/35 hover:bg-white/[0.06] hover:text-hunter-green">
           <ArrowLeft className="h-4 w-4" />
           {isArabic ? 'العودة للرئيسية' : 'Back to home'}
         </Link>
+        </div>
 
-        <div className="mt-8 grid w-full min-w-0 gap-8 lg:grid-cols-[1.05fr_0.95fr]">
-          <div className="min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-hunter-card p-4 shadow-2xl shadow-black/20 sm:p-8">
+        <div className="grid w-full min-w-0 items-start gap-6 lg:grid-cols-[minmax(0,1.08fr)_minmax(22rem,0.82fr)] xl:grid-cols-[minmax(0,1.12fr)_minmax(24rem,0.78fr)]">
+          <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-hunter-card/95 p-4 shadow-2xl shadow-black/20 sm:p-6 xl:p-7">
             <CheckoutMedia product={product} title={productTitle} />
-            <h1 className="font-heading text-3xl font-bold">
-              {productTitle}
-            </h1>
-            {productDescription ? (
-              <p className="mt-4 whitespace-pre-wrap text-lg leading-8 text-hunter-text-muted">
-                {productDescription}
-              </p>
-            ) : null}
-            <div className="mt-6 text-3xl font-heading font-bold text-hunter-green">
-              {product.currency === 'USD' ? '$' : `${product.currency || ''} `}{Number(product.price ?? 0).toFixed(0)}
+            <div className="text-center">
+              <h1 className="font-heading text-2xl font-bold leading-tight sm:text-3xl">
+                {productTitle}
+              </h1>
+              {productDescription ? (
+                <p className="mx-auto mt-4 max-w-2xl whitespace-pre-wrap text-base leading-8 text-hunter-text-muted sm:text-lg">
+                  {productDescription}
+                </p>
+              ) : null}
+              <div className="mt-5 text-3xl font-heading font-bold text-hunter-green sm:text-4xl">
+                {product.currency === 'USD' ? '$' : `${product.currency || ''} `}{Number(product.price ?? 0).toFixed(0)}
+              </div>
             </div>
 
-            <div className="mt-7 space-y-4">
+            <div className="mt-7 space-y-4 sm:space-y-5">
               {features.length > 0 ? (
                 <CheckoutInfoBlock title={isArabic ? 'المميزات' : 'Features'}>
-                  <div className="grid gap-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {features.map((feature) => (
-                      <div key={feature.id || feature.label_ar || feature.label_en} className="flex items-start gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <div key={feature.id || feature.label_ar || feature.label_en} className="flex items-start gap-3 rounded-2xl border border-white/10 bg-white/[0.04] p-3">
                         <CheckCircle2 className="mt-1 h-5 w-5 shrink-0 text-hunter-green" />
                         <span className="leading-7 text-hunter-text-muted">{textValue(feature, isArabic, 'label_ar', 'label_en')}</span>
                       </div>
@@ -334,13 +418,13 @@ export default function CheckoutPage() {
                 </CheckoutInfoBlock>
               ) : null}
 
-              <CheckoutGallery items={gallery} title={isArabic ? 'معرض المنتج' : 'Product media'} />
+              <CheckoutGallery items={gallery} title={isArabic ? 'معرض المنتج' : 'Product media'} isArabic={isArabic} />
 
               {steps.length > 0 ? (
                 <CheckoutInfoBlock title={isArabic ? 'خطوات التنفيذ' : 'Steps'}>
-                  <div className="space-y-3">
+                  <div className="grid gap-3 sm:grid-cols-2">
                     {steps.map((step, index) => (
-                      <div key={step.id || index} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
+                      <div key={step.id || index} className="rounded-2xl border border-white/10 bg-white/[0.04] p-3 sm:p-4">
                         <div className="text-sm font-bold text-hunter-green">{String(index + 1).padStart(2, '0')}</div>
                         {textValue(step, isArabic, 'title_ar', 'title_en') ? (
                           <h3 className="mt-1 font-bold text-hunter-text">{textValue(step, isArabic, 'title_ar', 'title_en')}</h3>
@@ -358,7 +442,7 @@ export default function CheckoutPage() {
                 <CheckoutInfoBlock title={termsTitle || (isArabic ? 'الشروط والتنبيهات قبل الدفع' : 'Terms before payment')}>
                   {termsContent ? <p className="whitespace-pre-wrap leading-8 text-hunter-text-muted">{termsContent}</p> : null}
                   {riskWarning ? (
-                    <div className="mt-4 flex items-start gap-3 rounded-xl border border-amber-500/20 bg-amber-500/10 p-3 text-amber-100">
+                    <div className="mt-4 flex items-start gap-3 rounded-2xl border border-amber-500/25 bg-amber-500/10 p-3 text-amber-100 sm:p-4">
                       <ShieldAlert className="mt-1 h-5 w-5 shrink-0" />
                       <span className="whitespace-pre-wrap leading-7">{riskWarning}</span>
                     </div>
@@ -372,8 +456,8 @@ export default function CheckoutPage() {
                 <CheckoutInfoBlock title={isArabic ? 'الأسئلة الشائعة' : 'FAQs'}>
                   <div className="space-y-3">
                     {faqs.map((faq) => (
-                      <details key={faq.id || faq.question_ar || faq.question_en} className="rounded-xl border border-white/10 bg-white/[0.03] p-3">
-                        <summary className="cursor-pointer font-bold leading-7 text-hunter-text">
+                      <details key={faq.id || faq.question_ar || faq.question_en} className="group rounded-2xl border border-white/10 bg-white/[0.04] p-3 transition hover:border-hunter-green/25 sm:p-4">
+                        <summary className="cursor-pointer list-none font-bold leading-7 text-hunter-text">
                           {textValue(faq, isArabic, 'question_ar', 'question_en')}
                         </summary>
                         {textValue(faq, isArabic, 'answer_ar', 'answer_en') ? (
@@ -389,7 +473,7 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          <div className="min-w-0 overflow-hidden rounded-3xl border border-white/10 bg-hunter-card p-4 shadow-2xl shadow-black/20 sm:p-8">
+          <div className="min-w-0 overflow-hidden rounded-[2rem] border border-white/10 bg-hunter-card/95 p-4 shadow-2xl shadow-black/20 sm:p-6 lg:sticky lg:top-28 xl:p-7">
             {success ? (
               <div className="text-center">
                 <CheckCircle2 className="mx-auto h-14 w-14 text-hunter-green" />
@@ -417,21 +501,21 @@ export default function CheckoutPage() {
                   value={form.customer_name}
                   onChange={(e) => setForm({ ...form, customer_name: e.target.value })}
                   placeholder={isArabic ? 'الاسم' : 'Name'}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-hunter-text outline-none transition placeholder:text-hunter-text-muted/70 hover:border-hunter-green/25 hover:bg-white/[0.07] focus:border-hunter-green/55 focus:bg-white/[0.08] focus:shadow-[0_0_0_3px_rgba(186,36,255,0.12)]"
                   required
                 />
                 <input
                   value={form.customer_email}
                   onChange={(e) => setForm({ ...form, customer_email: e.target.value })}
                   placeholder={isArabic ? 'البريد الإلكتروني' : 'Email'}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-hunter-text outline-none transition placeholder:text-hunter-text-muted/70 hover:border-hunter-green/25 hover:bg-white/[0.07] focus:border-hunter-green/55 focus:bg-white/[0.08] focus:shadow-[0_0_0_3px_rgba(186,36,255,0.12)]"
                   required
                 />
                 <input
                   value={form.customer_phone}
                   onChange={(e) => setForm({ ...form, customer_phone: e.target.value })}
                   placeholder={isArabic ? 'رقم الهاتف أو واتساب' : 'Phone or WhatsApp'}
-                  className="w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3"
+                  className="min-h-12 w-full rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-hunter-text outline-none transition placeholder:text-hunter-text-muted/70 hover:border-hunter-green/25 hover:bg-white/[0.07] focus:border-hunter-green/55 focus:bg-white/[0.08] focus:shadow-[0_0_0_3px_rgba(186,36,255,0.12)]"
                 />
 
                 <div className="space-y-3">
@@ -563,7 +647,7 @@ export default function CheckoutPage() {
                 <button
                   type="submit"
                   disabled={submitting || paymentMethods.length === 0}
-                  className="w-full rounded-2xl bg-hunter-green px-5 py-3 font-semibold text-hunter-bg transition hover:bg-hunter-green/90 disabled:opacity-60"
+                  className="min-h-12 w-full rounded-2xl bg-gradient-to-l from-fuchsia-600 via-violet-500 to-blue-500 px-5 py-3 font-bold text-white shadow-lg shadow-fuchsia-500/20 transition hover:-translate-y-0.5 hover:shadow-fuchsia-500/30 disabled:translate-y-0 disabled:opacity-60"
                 >
                   {submitting
                     ? (isArabic ? 'جارٍ الإرسال...' : 'Submitting...')

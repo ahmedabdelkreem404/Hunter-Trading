@@ -8,38 +8,71 @@ export default function useApiData(
   deps = [],
   options = {}
 ) {
-  const [data, setData] = useState(initialValue)
-  const [loading, setLoading] = useState(true)
   const refreshInterval = Number(options.refreshInterval || 0)
+  const readCachedResponse = () => {
+    if (typeof options.peek === 'function') {
+      return options.peek()
+    }
+
+    if (typeof request.peek === 'function') {
+      return request.peek()
+    }
+
+    return undefined
+  }
+  const getInitialState = () => {
+    const cachedResponse = readCachedResponse()
+    if (cachedResponse !== undefined) {
+      return {
+        data: select(cachedResponse),
+        loading: false,
+      }
+    }
+
+    return {
+      data: initialValue,
+      loading: true,
+    }
+  }
+  const [state, setState] = useState(getInitialState)
+  const { data, loading } = state
 
   useEffect(() => {
     let active = true
-    let hasLoaded = false
+    let hasLoaded = !loading
     let intervalId = null
+
+    const applyData = (value) => {
+      setState({ data: value, loading: false })
+    }
 
     const load = async () => {
       try {
+        const cachedResponse = readCachedResponse()
+        if (cachedResponse !== undefined && active) {
+          applyData(select(cachedResponse))
+          hasLoaded = true
+        }
+
         const responsePromise = request()
         if (responsePromise?.__hunterCachedData !== undefined && active) {
-          setData(select(responsePromise.__hunterCachedData))
-          if (!hasLoaded) {
-            hasLoaded = true
-            setLoading(false)
-          }
+          applyData(select(responsePromise.__hunterCachedData))
+          hasLoaded = true
         }
 
         const response = await responsePromise
         if (!active) return
-        setData(select(response))
+        applyData(select(response))
+        hasLoaded = true
       } catch {
         if (!active) return
         if (!hasLoaded) {
-          setData(initialValue)
+          setState({ data: initialValue, loading: false })
         }
       } finally {
         if (active && !hasLoaded) {
           hasLoaded = true
-          setLoading(false)
+          setState((current) => ({ ...current, loading: false }))
         }
       }
     }

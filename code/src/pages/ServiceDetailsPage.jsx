@@ -404,7 +404,8 @@ export default function ServiceDetailsPage() {
     () => (slug ? servicesAPI.getBySlug(slug) : servicesAPI.getAll('scalp')),
     null,
     (response) => (slug ? response.data ?? null : (response.data ?? [])[0] ?? null),
-    [slug]
+    [slug],
+    { peek: () => (slug ? servicesAPI.peekBySlug(slug) : servicesAPI.peekAll('scalp')) }
   )
   const { data: settings } = useApiData(settingsAPI.getPublic, {}, (response) => response.data ?? {})
   const general = settings.general ?? {}

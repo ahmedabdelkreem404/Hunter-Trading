@@ -137,6 +137,24 @@ function cachedGet(url, options = {}, ttl = 60000) {
   return promise
 }
 
+function peekCachedGet(url, options = {}, ttl = 60000) {
+  const key = `${url}:${JSON.stringify(options.params || {})}`
+  const cached = publicGetCache.get(key)
+  const now = Date.now()
+
+  if (cached?.data && now - cached.timestamp < ttl) {
+    return cached.data
+  }
+
+  const persistentCached = readPersistentPublicCache(key, ttl)
+  if (persistentCached?.data) {
+    publicGetCache.set(key, { data: persistentCached.data, timestamp: persistentCached.timestamp, promise: null })
+    return persistentCached.data
+  }
+
+  return undefined
+}
+
 api.interceptors.request.use((config) => {
   const method = String(config.method || 'get').toLowerCase()
   if (csrfToken && ['post', 'put', 'delete', 'patch'].includes(method)) {
@@ -155,21 +173,32 @@ api.interceptors.response.use(
   }
 )
 
+const getPublicSettings = () => cachedGet('/settings/public', {}, PUBLIC_DATA_TTL)
+getPublicSettings.peek = () => peekCachedGet('/settings/public', {}, PUBLIC_DATA_TTL)
+
+const getPublicSections = () => cachedGet('/sections', {}, PUBLIC_DATA_TTL)
+getPublicSections.peek = () => peekCachedGet('/sections', {}, PUBLIC_DATA_TTL)
+
+const getCoachProfile = () => cachedGet('/coach', {}, PUBLIC_DATA_TTL)
+getCoachProfile.peek = () => peekCachedGet('/coach', {}, PUBLIC_DATA_TTL)
+
 export const settingsAPI = {
-  getPublic: () => cachedGet('/settings/public', {}, PUBLIC_DATA_TTL),
+  getPublic: getPublicSettings,
 }
 
 export const sectionSettingsAPI = {
-  getPublic: () => cachedGet('/sections', {}, PUBLIC_DATA_TTL),
+  getPublic: getPublicSections,
 }
 
 export const coachAPI = {
-  getProfile: () => cachedGet('/coach', {}, PUBLIC_DATA_TTL),
+  getProfile: getCoachProfile,
 }
 
 export const servicesAPI = {
   getAll: (type) => cachedGet('/services', { params: { type } }, PUBLIC_DATA_TTL),
+  peekAll: (type) => peekCachedGet('/services', { params: { type } }, PUBLIC_DATA_TTL),
   getBySlug: (slug) => cachedGet(`/services/${slug}`, {}, PUBLIC_DATA_TTL),
+  peekBySlug: (slug) => peekCachedGet(`/services/${slug}`, {}, PUBLIC_DATA_TTL),
 }
 
 export const checkoutAPI = {
@@ -179,13 +208,19 @@ export const checkoutAPI = {
     }),
 }
 
+const getPublicMarketUpdates = () => cachedGet('/market/updates', {}, PUBLIC_DATA_TTL)
+getPublicMarketUpdates.peek = () => peekCachedGet('/market/updates', {}, PUBLIC_DATA_TTL)
+
+const getPublicTestimonials = () => cachedGet('/testimonials', {}, PUBLIC_DATA_TTL)
+getPublicTestimonials.peek = () => peekCachedGet('/testimonials', {}, PUBLIC_DATA_TTL)
+
 export const marketAPI = {
-  getPublic: () => cachedGet('/market/updates', {}, PUBLIC_DATA_TTL),
+  getPublic: getPublicMarketUpdates,
 }
 
 // Testimonials API
 export const testimonialsAPI = {
-  getAll: () => cachedGet('/testimonials', {}, PUBLIC_DATA_TTL),
+  getAll: getPublicTestimonials,
 }
 
 // Leads API

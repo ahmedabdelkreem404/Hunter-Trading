@@ -340,7 +340,10 @@ export default function PremiumProductSection({
     [],
     selectServices,
     [category],
-    { refreshInterval: LIVE_REFRESH_INTERVAL }
+    {
+      refreshInterval: LIVE_REFRESH_INTERVAL,
+      peek: () => servicesAPI.peekAll(category),
+    }
   )
   const { data: sections } = useApiData(
     sectionSettingsAPI.getPublic,
@@ -462,7 +465,7 @@ export default function PremiumProductSection({
                     whileInView={{ opacity: 1, y: 0 }}
                     viewport={{ once: true }}
                     transition={{ duration: 0.45, delay: index * 0.06 }}
-                    className={`service-product-card group relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-[4.5%] shadow-[0_18px_44px_rgba(0,0,0,0.18)] sm:h-full sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_60px_rgba(0,0,0,0.16)] ${
+                    className={`service-product-card group relative min-w-0 overflow-hidden rounded-2xl border border-white/10 bg-hunter-bg p-[4.5%] shadow-[0_18px_44px_rgba(0,0,0,0.18)] sm:rounded-[2rem] sm:p-4 sm:shadow-[0_24px_60px_rgba(0,0,0,0.16)] ${
                       singleCard ? 'service-product-card-single mx-auto w-full' : ''
                     }`}
                   >
@@ -496,7 +499,7 @@ export default function PremiumProductSection({
                       </>
                     ) : null}
 
-                    <div className={`service-product-card-shell relative z-10 flex min-w-0 flex-col rounded-2xl border p-[6%] sm:h-full sm:rounded-[1.65rem] sm:p-5 ${showMobileRibbon ? 'pt-[20%] sm:pt-5' : ''}`}>
+                    <div className={`service-product-card-shell relative z-10 flex min-w-0 flex-col rounded-2xl border p-[6%] sm:rounded-[1.65rem] sm:p-5 ${showMobileRibbon ? 'pt-[20%] sm:pt-5' : ''}`}>
                       <div className={`mb-[7%] flex min-w-0 flex-wrap items-center gap-[4%] sm:mb-4 sm:gap-3 ${isOffers ? 'justify-center sm:justify-between' : 'justify-center'}`}>
                         {isOffers ? (
                           <>
@@ -574,7 +577,7 @@ export default function PremiumProductSection({
                         </div>
                       ) : null}
 
-                      <div className={`flex min-w-0 pt-[10%] sm:mt-auto sm:pt-6 ${isScalp ? 'justify-center' : 'gap-[5%] sm:gap-3'}`}>
+                      <div className={`flex min-w-0 pt-[10%] sm:pt-6 ${isScalp ? 'justify-center' : 'gap-[5%] sm:gap-3'}`}>
                         {ctaLabel ? (
                         <CardAction
                           action={action}

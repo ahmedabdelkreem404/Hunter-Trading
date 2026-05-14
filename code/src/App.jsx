@@ -19,6 +19,7 @@ import { ThemeProvider, useTheme } from './contexts/ThemeContext'
 import { PUBLIC_CONTENT_CHANGED_EVENT, invalidatePublicCache, sectionSettingsAPI, settingsAPI } from './api'
 import useApiData from './hooks/useApiData'
 import { buildHomepageSectionsFromSettings } from './utils/sectionLayout'
+import { applyConfiguredDefaultLanguage, saveLanguage } from './utils/language'
 
 const LIVE_REFRESH_INTERVAL = 0
 const SECTION_REFRESH_INTERVAL = 0
@@ -137,8 +138,12 @@ function AppContent() {
 
   const changeLanguage = (lang) => {
     i18n.changeLanguage(lang)
-    localStorage.setItem('language', lang)
+    saveLanguage(lang, { manual: true })
   }
+
+  useEffect(() => {
+    applyConfiguredDefaultLanguage(i18n, generalSettings.default_language?.value || 'ar')
+  }, [generalSettings.default_language?.value, i18n])
 
   useEffect(() => {
     const root = document.documentElement

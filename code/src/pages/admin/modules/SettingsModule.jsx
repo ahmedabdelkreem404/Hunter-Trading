@@ -1,4 +1,4 @@
-import { ActionButton, Field, SectionCard, TextArea } from './shared/AdminUI'
+import { ActionButton, Field, SectionCard, Select, TextArea } from './shared/AdminUI'
 import SocialSettingsControls from './shared/SocialSettingsControls'
 
 function SettingsBlock({ title, description, children }) {
@@ -54,6 +54,17 @@ export default function SettingsModule({ settings, setSettings, siteLogoFile, se
               <LogoUploader preview={settings.site_logo || ''} file={siteLogoFile} onChange={setSiteLogoFile} />
               <Field label="اسم الموقع" value={settings.website_name || ''} onChange={(e) => setSettings((current) => ({ ...current, website_name: e.target.value }))} />
             </div>
+          </SettingsBlock>
+
+          <SettingsBlock title="لغة الموقع الافتراضية" description="اللغة التي يفتح بها الموقع لأول مرة للزائر. يمكن للزائر تغييرها من زر اللغة في الناف بار.">
+            <Select
+              label="اختر اللغة الافتراضية"
+              value={settings.default_language || 'ar'}
+              onChange={(e) => setSettings((current) => ({ ...current, default_language: e.target.value }))}
+            >
+              <option value="ar">العربية</option>
+              <option value="en">English</option>
+            </Select>
           </SettingsBlock>
 
           <SettingsBlock title="بيانات التواصل" description="البيانات الأساسية التي تظهر للعميل أو تستخدم داخل لوحة التحكم.">

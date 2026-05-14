@@ -260,3 +260,6 @@ CREATE TABLE IF NOT EXISTS analytics (
 
 INSERT IGNORE INTO users (username, email, password_hash, role)
 VALUES ('admin', 'admin@huntertrading.com', '$2y$10$rmcmz0oV0g5uA4961/JMtOYtJTQ93NGnBbr7jXyxG0EbWZgda6Nc6', 'admin');
+
+INSERT IGNORE INTO site_settings (setting_key, setting_value, setting_type, category, description)
+VALUES ('default_language', 'ar', 'select', 'general', 'Default public website language: ar or en');
